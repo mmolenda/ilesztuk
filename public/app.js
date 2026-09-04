@@ -1,7 +1,7 @@
-import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js?v=20260904-1447";
-import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1447";
-import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1447";
-import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1447";
+import { calculateForCalculator, ValidationError } from "./js/calculations.js?v=20260904-1740";
+import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1740";
+import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1740";
+import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1740";
 
 const app = document.querySelector("#app");
 
@@ -246,7 +246,7 @@ function bindCalculatorForm(calculator) {
     const validation = validateCalculatorForm(form, calculator);
     renderFieldValidation(form, validation, showErrors);
     if (!validation.valid) {
-      renderInvalidResult(validation, { showSummary: showErrors || hasTouchedFields(form) });
+      renderInvalidResult(validation, calculator, { showSummary: showErrors || hasTouchedFields(form) });
       return;
     }
 
@@ -256,7 +256,7 @@ function bindCalculatorForm(calculator) {
       renderBuyerResult(calculation, calculator);
     } catch (error) {
       if (error instanceof ValidationError) {
-        renderInvalidResult({ errors: [], formErrors: [error.message], valid: false }, { showSummary: true });
+        renderInvalidResult({ errors: [], formErrors: [error.message], valid: false }, calculator, { showSummary: true });
         return;
       }
       throw error;
@@ -342,21 +342,7 @@ function renderBuyerResult(calculation, calculator) {
       <details class="calculation-details">
         <summary>Szczegóły obliczeń</summary>
         <div class="details-grid">
-          ${renderTechnicalDetails(calculator)}
-          <section>
-            <h3>Elementy</h3>
-            <ul class="pieces">
-              ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, calculator))}</li>`).join("")}
-            </ul>
-          </section>
-          <section>
-            <h3>Parametry wyniku</h3>
-            <dl>
-              ${sellerMetricsFor(result, calculator).map(([label, value]) => `
-                <div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>
-              `).join("")}
-            </dl>
-          </section>
+          ${renderBuyerDetails(calculation, calculator)}
         </div>
       </details>
     </div>
@@ -383,22 +369,154 @@ function renderBuyerResult(calculation, calculator) {
   });
 }
 
-function renderTechnicalDetails(calculator) {
-  const rules = calculatorRuleChips(calculator);
+function renderBuyerDetails(calculation, calculator) {
+  const config = calculator.configuration;
+  const result = calculation.result;
+  const rules = buyerOrderingRules(config);
+  return `
+    <section class="details-section">
+      <h3>Twoje elementy</h3>
+      <ol class="detail-items">
+        ${calculation.input.pieces.map((piece, index) => renderBuyerItem(piece, index, config)).join("")}
+      </ol>
+    </section>
+    <section class="details-section">
+      <h3>Podsumowanie</h3>
+      <dl class="details-totals">
+        ${renderDetailsTotal("Łączna powierzchnia", formatBuyerArea(result.totalArea, result.areaUnit))}
+        ${config.edges?.enabled && result.totalCoatedEdgeCm > 0
+          ? renderDetailsTotal(`Łączna długość (${edgeFinishingLabel(config)})`, formatBuyerLength(result.totalCoatedEdgeCm))
+          : ""}
+        ${renderDetailsTotal("Do kupienia", formatPiecesQuantity(result.purchasableItems))}
+      </dl>
+    </section>
+    ${renderOrderingRulesSection(rules)}
+  `;
+}
+
+function renderBuyerItem(piece, index, config) {
+  const edgeText = buyerEdgeSummary(piece.edges, config.edges);
+  const customFields = (piece.customFields ?? []).filter((field) => field.value);
+  const area = buyerPieceArea(piece, config);
+  return `
+    <li>
+      <h4>Element ${index + 1}</h4>
+      <p>${escapeHtml(formatBuyerDimensions(piece, config))}</p>
+      <p class="detail-item-calculation">= ${piece.quantity} × ${escapeHtml(formatBuyerPieceArea(area.singleCm2, config))}</p>
+      ${piece.quantity === 1 ? "" : `<p class="detail-item-calculation">= ${escapeHtml(formatBuyerPieceArea(area.totalCm2, config))}</p>`}
+      ${edgeText ? `<p>${escapeHtml(edgeText)}</p>` : ""}
+      ${customFields.map((field) => `<p>${escapeHtml(field.label)}: ${escapeHtml(field.value)}</p>`).join("")}
+    </li>
+  `;
+}
+
+function buyerPieceArea(piece, config) {
+  const firstDimension = config.dimensions?.first ?? { key: "width" };
+  const secondDimension = config.dimensions?.second ?? { key: "height" };
+  const singleCm2 = piece[firstDimension.key] * piece[secondDimension.key];
+  return { singleCm2, totalCm2: singleCm2 * piece.quantity };
+}
+
+function formatBuyerPieceArea(valueCm2, config) {
+  const areaUnit = config.pricing?.areaUnit ?? "cm2";
+  return formatBuyerArea(areaUnit === "m2" ? valueCm2 / 10_000 : valueCm2, areaUnit);
+}
+
+function formatBuyerDimensions(piece, config) {
+  const firstDimension = config.dimensions?.first ?? { key: "width" };
+  const secondDimension = config.dimensions?.second ?? { key: "height" };
+  const noteOrder = config.dimensions?.noteOrder ?? [firstDimension.key, secondDimension.key];
+  const unit = config.displayUnit ?? "cm";
+  const values = noteOrder.map((key) => formatMetric(fromCentimeters(piece[key], unit)));
+  return `${piece.quantity} × ${values.join(" × ")} ${unit}`;
+}
+
+function buyerEdgeSummary(edges = [], edgeConfig = {}) {
+  if (!edgeConfig?.enabled) {
+    return "";
+  }
+  const label = edgeFinishingLabel({ edges: edgeConfig });
+  if (edges.length === 0) {
+    return `${label}: brak`;
+  }
+  if (edges.length === 4) {
+    return `${label}: dookoła`;
+  }
+  return `${label}: ${edges.map((edge) => edgeLabel(edge).toLowerCase()).join(", ")}`;
+}
+
+function edgeFinishingLabel(config) {
+  return String(config.edges?.label ?? "").trim() || "Oklejenie";
+}
+
+function renderDetailsTotal(label, value) {
+  return `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+}
+
+function formatBuyerArea(value, unit) {
+  if (unit === "m2") {
+    return `${formatMetric(value)} m²`;
+  }
+  if (value >= 10_000) {
+    return `${formatMetric(value / 10_000)} m²`;
+  }
+  return `${formatMetric(value)} cm²`;
+}
+
+function formatBuyerLength(valueCm) {
+  return valueCm >= 100
+    ? `${formatMetric(valueCm / 100)} m`
+    : `${formatMetric(valueCm)} cm`;
+}
+
+function buyerOrderingRules(config) {
+  const firstDimension = config.dimensions?.first ?? { label: "Pierwszy wymiar" };
+  const secondDimension = config.dimensions?.second ?? { label: "Drugi wymiar" };
+  const constraints = config.constraints ?? {};
+  const rules = [];
+
+  if (constraints.minFirstCm > 0.01) {
+    rules.push(`Minimalna ${firstDimension.label.toLowerCase()}: ${formatLength(constraints.minFirstCm, config)}`);
+  }
+  if (constraints.minSecondCm > 0.01) {
+    rules.push(`Minimalna ${secondDimension.label.toLowerCase()}: ${formatLength(constraints.minSecondCm, config)}`);
+  }
+  if (constraints.maxFirstCm) {
+    rules.push(`Maksymalna ${firstDimension.label.toLowerCase()}: ${formatLength(constraints.maxFirstCm, config)}`);
+  }
+  if (constraints.maxSecondCm) {
+    rules.push(`Maksymalna ${secondDimension.label.toLowerCase()}: ${formatLength(constraints.maxSecondCm, config)}`);
+  }
+  if (constraints.maxPerimeterCm) {
+    rules.push(`Maksymalna suma boków: ${formatLength(constraints.maxPerimeterCm, config)}`);
+  }
+  if (constraints.enforceSecondNotGreaterThanFirst) {
+    rules.push(`${secondDimension.label} nie może być większa niż ${firstDimension.label.toLowerCase()}`);
+  }
+  if (config.edges?.enabled && config.edges.minFinishEdgeCm) {
+    rules.push(`${edgeFinishingLabel(config)} możliwe dla boków od ${formatLength(config.edges.minFinishEdgeCm, config)}`);
+  }
+  if (config.purchasableQuantity?.rounding?.mode === "ceil" && config.purchasableQuantity.rounding.precision === 0) {
+    rules.push("Liczba sztuk jest zaokrąglana w górę do pełnej sztuki.");
+  }
+  return rules;
+}
+
+function renderOrderingRulesSection(rules) {
   if (rules.length === 0) {
     return "";
   }
   return `
-    <section>
-      <h3>Reguły kalkulacji</h3>
-      <ul class="pieces">
+    <section class="details-section">
+      <h3>Zasady zamówienia</h3>
+      <ul class="details-rules">
         ${rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("")}
       </ul>
     </section>
   `;
 }
 
-function renderInvalidResult(validation, { showSummary = false } = {}) {
+function renderInvalidResult(validation, calculator, { showSummary = false } = {}) {
   const target = document.querySelector("#result");
   if (!target) {
     return;
@@ -418,8 +536,22 @@ function renderInvalidResult(validation, { showSummary = false } = {}) {
           <ul>${uniqueMessages.slice(0, 4).map((message) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>
         </div>
       ` : ""}
+      <details class="calculation-details">
+        <summary>Szczegóły obliczeń</summary>
+        <div class="details-grid">
+          ${renderStaticCalculationDetails(calculator)}
+        </div>
+      </details>
     </div>
   `;
+}
+
+function renderStaticCalculationDetails(calculator) {
+  const rules = buyerOrderingRules(calculator.configuration);
+  if (rules.length > 0) {
+    return renderOrderingRulesSection(rules);
+  }
+  return `<p class="details-empty">Brak dodatkowych zasad zamówienia.</p>`;
 }
 
 function validateCalculatorForm(form, calculator) {
@@ -589,41 +721,6 @@ function nextRowIndex(rowsContainer) {
     .map((row) => Number(row.dataset.rowIndex))
     .filter(Number.isFinite);
   return indexes.length > 0 ? Math.max(...indexes) + 1 : 0;
-}
-
-function calculatorRuleChips(calculator) {
-  const config = calculator.configuration;
-  const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
-  const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
-  return [
-    ...rectangularRuleChips(config),
-    config.edges?.minFinishEdgeCm ? `${config.edges.label ?? "Wykończenie"}: bok min. ${formatLength(config.edges.minFinishEdgeCm, config)}` : null,
-    config.constraints?.maxPerimeterCm ? `Max suma boków ${formatLength(config.constraints.maxPerimeterCm, config)}` : null,
-    config.constraints?.maxFirstCm ? `Max ${firstDimension.label.toLowerCase()} ${formatLength(config.constraints.maxFirstCm, config)}` : null,
-    config.constraints?.maxSecondCm ? `Max ${secondDimension.label.toLowerCase()} ${formatLength(config.constraints.maxSecondCm, config)}` : null,
-  ].filter(Boolean);
-}
-
-function rectangularRuleChips(config) {
-  const pricing = config.pricing ?? {};
-  const rules = [];
-
-  if (pricing.coefficient) {
-    rules.push(`Powierzchnia ${areaUnitLabel(pricing.areaUnit)} x ${formatMetric(pricing.coefficient)}`);
-  }
-
-  if (config.dimensions?.rounding?.enabled) {
-    rules.push(`Wymiary: ${roundingLabel(config.dimensions.rounding)}`);
-  }
-  if (config.rowArea?.rounding?.enabled) {
-    rules.push(`Wiersze: ${roundingLabel(config.rowArea.rounding)}`);
-  }
-  if (config.totalArea?.rounding?.enabled) {
-    rules.push(`Suma: ${roundingLabel(config.totalArea.rounding)}`);
-  }
-  rules.push(`Wynik: ${roundingLabel(config.purchasableQuantity?.rounding ?? { mode: "round", precision: 0 })}`);
-
-  return rules;
 }
 
 function renderEdgePicker(index, config) {
@@ -826,19 +923,6 @@ function edgeLabel(edge) {
     bottom: "Dół",
     left: "Lewy",
   }[edge];
-}
-
-function roundingLabel(rounding) {
-  const mode = {
-    ceil: "w górę",
-    floor: "w dół",
-    round: "matematycznie",
-  }[rounding.mode] ?? rounding.mode;
-  return `${mode} do ${rounding.precision === 0 ? "pełnej liczby" : `${rounding.precision} miejsc`}`;
-}
-
-function areaUnitLabel(areaUnit) {
-  return areaUnit === "m2" ? "m²" : "cm²";
 }
 
 function fromCentimeters(valueCm, unit) {
