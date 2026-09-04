@@ -1,0 +1,31 @@
+{
+  "customerId": "Y1GI1sqavjwl",
+  "customerName": "Krak_Meble",
+  "calculatorId": "ttWUjqI3lolA",
+  "calculatorName": "Formatka meblowa na wymiar",
+  "plugin": "rectangular_pieces",
+  "configuration": {
+    "displayUnit": "cm",
+    "dimensions": {
+      "first": { "key": "length", "label": "Długość" },
+      "second": { "key": "width", "label": "Szerokość" },
+      "noteOrder": ["length", "width"]
+    },
+    "pricing": {
+      "areaUnit": "cm2",
+      "coefficient": 0.01
+    },
+    "purchasableQuantity": {
+      "rounding": { "mode": "round", "precision": 0 }
+    },
+    "edges": {
+      "enabled": true,
+      "label": "Oklejenie",
+      "minFinishEdgeCm": 8
+    },
+    "constraints": {
+      "maxPerimeterCm": 460,
+      "enforceSecondNotGreaterThanFirst": false
+    }
+  }
+}
