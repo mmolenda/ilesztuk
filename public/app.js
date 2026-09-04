@@ -1,7 +1,7 @@
-import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js";
-import { isValidCalculatorId, loadCalculator } from "./js/calculators.js";
-import { formatPiecesQuantity } from "./js/formatting.js";
-import { MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js";
+import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js?v=20260904-1447";
+import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1447";
+import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1447";
+import { MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1447";
 
 const app = document.querySelector("#app");
 

@@ -6,8 +6,8 @@ import {
   requirePieces,
   roundByPolicy,
   roundDecimal,
-} from "./helpers.js";
-import { formatPiecesQuantity } from "../formatting.js";
+} from "./helpers.js?v=20260904-1447";
+import { formatPiecesQuantity } from "../formatting.js?v=20260904-1447";
 
 export const RECTANGULAR_PIECES_PLUGIN = "rectangular_pieces";
 

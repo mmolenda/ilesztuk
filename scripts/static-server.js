@@ -22,27 +22,36 @@ http.createServer(async (request, response) => {
     const url = new URL(request.url, `http://${request.headers.host}`);
     pathname = url.pathname;
     if (pathname === "/calculators" || pathname === "/calculators/") {
-      return sendNotFound(response);
+      return sendNotFound(request, response);
     }
 
     const filePath = routeToFile(pathname);
     const content = await readFile(filePath);
     const extension = path.extname(filePath);
-    response.writeHead(200, { "content-type": contentTypes[extension] ?? "application/octet-stream" });
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-type": contentTypes[extension] ?? "application/octet-stream",
+    });
     response.end(content);
+    logRequest(request, 200);
   } catch (error) {
     if (error.code === "ENOENT" && !path.extname(pathname) && !pathname.startsWith("/calculators/")) {
       const content = await readFile(path.join(publicDir, "index.html"));
-      response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      response.writeHead(200, {
+        "cache-control": "no-store",
+        "content-type": "text/html; charset=utf-8",
+      });
       response.end(content);
+      logRequest(request, 200);
       return;
     }
     if (error.code === "ENOENT" || error.code === "EISDIR") {
-      return sendNotFound(response);
+      return sendNotFound(request, response);
     }
     console.error(error);
     response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
     response.end("Internal server error");
+    logRequest(request, 500);
   }
 }).listen(port, host, () => {
   console.log(`IleSztuk static server listening on http://${host}:${port}`);
@@ -64,7 +73,12 @@ function routeToFile(pathname) {
   return path.join(publicDir, "index.html");
 }
 
-function sendNotFound(response) {
+function sendNotFound(request, response) {
   response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
   response.end("Not found");
+  logRequest(request, 404);
+}
+
+function logRequest(request, status) {
+  console.log(`${new Date().toISOString()} ${request.method} ${request.url} ${status}`);
 }
