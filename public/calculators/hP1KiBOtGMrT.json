@@ -1,0 +1,31 @@
+{
+  "customerId": "NRs2LVBOHv75",
+  "customerName": "bezpiecznekoty",
+  "calculatorId": "hP1KiBOtGMrT",
+  "calculatorName": "Siatka na balkon dla kota",
+  "plugin": "rectangular_pieces",
+  "configuration": {
+    "displayUnit": "cm",
+    "dimensions": {
+      "first": {
+        "key": "rollWidth",
+        "label": "Szerokość rolki",
+        "allowedValuesCm": [200, 300, 400]
+      },
+      "second": { "key": "length", "label": "Długość" },
+      "noteOrder": ["rollWidth", "length"]
+    },
+    "pricing": {
+      "areaUnit": "m2",
+      "coefficient": 1
+    },
+    "purchasableQuantity": {
+      "rounding": { "mode": "ceil", "precision": 0 }
+    },
+    "constraints": {
+      "minFirstCm": 200,
+      "minSecondCm": 0.01,
+      "enforceSecondNotGreaterThanFirst": false
+    }
+  }
+}
