@@ -274,7 +274,7 @@ form {
 }
 
 .furniture-row {
-  grid-template-columns: minmax(0, 1fr) minmax(260px, auto) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px) auto;
 }
 
 .piece-row {
@@ -336,7 +336,7 @@ form {
   border-radius: 8px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  max-width: 420px;
+  max-width: 320px;
   margin: 0;
   min-width: 0;
   overflow: hidden;
@@ -344,7 +344,12 @@ form {
 }
 
 .edge-field {
+  max-width: 320px;
   min-width: 260px;
+}
+
+.edge-field .field-error {
+  min-height: 2.7em;
 }
 
 .furniture-row.no-edge-picker {
@@ -466,6 +471,7 @@ label {
   font-weight: 750;
   line-height: 1.35;
   min-height: 1.05rem;
+  overflow-wrap: anywhere;
 }
 
 input,
