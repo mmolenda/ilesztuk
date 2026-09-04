@@ -7,6 +7,7 @@ import {
   roundByPolicy,
   roundDecimal,
 } from "./helpers.js";
+import { formatPiecesQuantity } from "../formatting.js";
 
 export const RECTANGULAR_PIECES_PLUGIN = "rectangular_pieces";
 
@@ -347,7 +348,7 @@ function sellerMetrics(result) {
     result.limits.maxPerimeterCm ? ["Limit sumy boków", formatLength(result.limits.maxPerimeterCm, { displayUnit: result.displayUnit })] : null,
     result.limits.maxFirstCm ? [`Maks. ${result.dimensionLabels?.first ?? "pierwszy wymiar"}`, formatLength(result.limits.maxFirstCm, { displayUnit: result.displayUnit })] : null,
     result.limits.maxSecondCm ? [`Maks. ${result.dimensionLabels?.second ?? "drugi wymiar"}`, formatLength(result.limits.maxSecondCm, { displayUnit: result.displayUnit })] : null,
-    ["Wynik", `${result.purchasableItems} sztuk`],
+    ["Wynik", formatPiecesQuantity(result.purchasableItems)],
   ].filter(Boolean);
 }
 

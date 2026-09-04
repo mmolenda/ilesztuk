@@ -1,5 +1,6 @@
 import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js";
 import { isValidCalculatorId, loadCalculator } from "./js/calculators.js";
+import { formatPiecesQuantity } from "./js/formatting.js";
 
 const app = document.querySelector("#app");
 
@@ -46,9 +47,14 @@ function renderLanding() {
 function renderCalculatorPage(calculator, error = "") {
   document.title = `${calculator.calculatorName} - IleSztuk`;
   app.innerHTML = `
-    <section class="panel">
-      <h1>${escapeHtml(calculator.calculatorName)}</h1>
-      <p class="muted">${escapeHtml(calculator.customerName)}</p>
+    <section class="calculator-shell">
+      <div class="calculator-header">
+        <div>
+          <p class="eyebrow">Kalkulator zamówienia</p>
+          <h1>${escapeHtml(calculator.calculatorName)}</h1>
+          <p class="seller-name">${escapeHtml(calculator.customerName)}</p>
+        </div>
+      </div>
       ${usesGraphicalRectangularCalculatorForm(calculator) ? renderFurnitureCalculatorForm(calculator) : renderAreaCalculatorForm(calculator)}
     </section>
   `;
@@ -69,58 +75,66 @@ function renderAreaCalculatorForm(calculator) {
   const config = calculator.configuration;
   const first = config.dimensions?.first ?? { key: "width", label: "Szerokość" };
   const second = config.dimensions?.second ?? { key: "height", label: "Wysokość" };
-  const rules = rectangularRuleChips(config);
 
   return `
-    <form data-calculation-form>
-      ${rules.length > 0 ? `<div class="rule-strip">${rules.map((rule) => `<span>${escapeHtml(rule)}</span>`).join("")}</div>` : ""}
-      <div class="form-grid" data-piece-rows>
-        <div class="piece-row" data-piece-row>
-          <input name="quantity_0" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
-          ${renderDimensionInput(first, 0, config)}
-          ${renderDimensionInput(second, 0, config)}
-          <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
+    <form data-calculation-form novalidate>
+      <section class="calculator-section input-section">
+        <div class="section-heading">
+          <h2>Elementy do zamówienia</h2>
+          <p>Podaj ilość i wymiary każdego elementu. Wynik aktualizuje się automatycznie.</p>
         </div>
-      </div>
-      <div class="row-controls">
-        <button type="button" class="icon-button" data-add-row aria-label="Dodaj wiersz">+</button>
-      </div>
+        <div class="form-grid" data-piece-rows>
+          ${renderAreaRow(0, calculator)}
+        </div>
+        <p class="empty-state" data-empty-state hidden>Brak elementów. Dodaj pierwszy element, aby rozpocząć kalkulację.</p>
+        <div class="row-controls">
+          <button type="button" class="add-row-button" data-add-row>+ Dodaj element</button>
+        </div>
+      </section>
     </form>
     <template data-row-template>
-      <div class="piece-row" data-piece-row>
-        <input name="quantity___INDEX__" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
-        ${renderDimensionInput(first, "__INDEX__", config)}
-        ${renderDimensionInput(second, "__INDEX__", config)}
-        <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
-      </div>
+      ${renderAreaRow("__INDEX__", calculator)}
     </template>
     <section id="result" aria-live="polite"></section>
   `;
 }
 
-function renderFurnitureCalculatorForm(calculator) {
+function renderAreaRow(index, calculator) {
   const config = calculator.configuration;
-  const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
-  const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
-  const rules = [
-    ...rectangularRuleChips(config),
-    config.edges?.minFinishEdgeCm ? `${config.edges.label ?? "Wykończenie"}: bok min. ${formatLength(config.edges.minFinishEdgeCm, config)}` : null,
-    config.constraints?.maxPerimeterCm ? `Max suma boków ${formatLength(config.constraints.maxPerimeterCm, config)}` : null,
-    config.constraints?.maxFirstCm ? `Max ${firstDimension.label.toLowerCase()} ${formatLength(config.constraints.maxFirstCm, config)}` : null,
-    config.constraints?.maxSecondCm ? `Max ${secondDimension.label.toLowerCase()} ${formatLength(config.constraints.maxSecondCm, config)}` : null,
-  ].filter(Boolean);
+  const first = config.dimensions?.first ?? { key: "width", label: "Szerokość" };
+  const second = config.dimensions?.second ?? { key: "height", label: "Wysokość" };
 
   return `
-    <form data-calculation-form>
-      <div class="rule-strip">
-        ${rules.map((rule) => `<span>${escapeHtml(rule)}</span>`).join("")}
+    <div class="piece-row" data-piece-row data-row-index="${index}">
+      <div class="row-title"><span data-row-number>Element 1</span></div>
+      <div class="row-fields">
+        ${renderQuantityField(index)}
+        ${renderDimensionField(first, index, config)}
+        ${renderDimensionField(second, index, config)}
       </div>
-      <div class="form-grid furniture-grid" data-piece-rows>
-        ${renderFurnitureRow(0, calculator)}
-      </div>
-      <div class="row-controls">
-        <button type="button" class="icon-button" data-add-row aria-label="Dodaj wiersz">+</button>
-      </div>
+      <button type="button" class="remove-row-button" data-remove-row aria-label="Usuń element">Usuń</button>
+    </div>
+  `;
+}
+
+function renderFurnitureCalculatorForm(calculator) {
+  const config = calculator.configuration;
+
+  return `
+    <form data-calculation-form novalidate>
+      <section class="calculator-section input-section">
+        <div class="section-heading">
+          <h2>Elementy do zamówienia</h2>
+          <p>Uzupełnij wymiary, ilość i opcje wykończenia. Wynik aktualizuje się automatycznie.</p>
+        </div>
+        <div class="form-grid furniture-grid" data-piece-rows>
+          ${renderFurnitureRow(0, calculator)}
+        </div>
+        <p class="empty-state" data-empty-state hidden>Brak elementów. Dodaj pierwszy element, aby rozpocząć kalkulację.</p>
+        <div class="row-controls">
+          <button type="button" class="add-row-button" data-add-row>+ Dodaj element</button>
+        </div>
+      </section>
     </form>
     <template data-row-template>
       ${renderFurnitureRow("__INDEX__", calculator)}
@@ -136,20 +150,19 @@ function renderFurnitureRow(index, calculator) {
   const noteOrder = config.dimensions?.noteOrder ?? [firstDimension.key, secondDimension.key];
   const firstInput = renderDimensionInput(dimensionForKey(noteOrder[0], config), index, config);
   const secondInput = renderDimensionInput(dimensionForKey(noteOrder[1], config), index, config);
-  const decorInput = config.decor?.enabled
-    ? `<input name="decor_${index}" type="text" placeholder="Dekor" ${config.decor.required ? "required" : ""}>`
-    : "";
+  const decorInput = config.decor?.enabled ? renderDecorField(index, config) : "";
 
   return `
-    <div class="furniture-row ${config.edges?.enabled ? "" : "no-edge-picker"}" data-piece-row>
+    <div class="furniture-row ${config.edges?.enabled ? "" : "no-edge-picker"}" data-piece-row data-row-index="${index}">
+      <div class="row-title"><span data-row-number>Element 1</span></div>
       <div class="furniture-fields">
-        <input name="quantity_${index}" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
+        ${renderQuantityField(index)}
         ${firstInput}
         ${secondInput}
         ${decorInput}
       </div>
       ${renderEdgePicker(index, config)}
-      <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
+      <button type="button" class="remove-row-button" data-remove-row aria-label="Usuń element">Usuń</button>
     </div>
   `;
 }
@@ -166,12 +179,13 @@ function bindRows(onRowsChanged = () => {}) {
     const rows = rowsContainer.querySelectorAll("[data-piece-row]");
     const rowCount = rows.length;
     addButton.disabled = rowCount >= maxRows;
-    rows.forEach((row) => {
-      const removeButton = row.querySelector("[data-remove-row]");
-      if (removeButton) {
-        removeButton.hidden = rowCount <= 1;
+    rows.forEach((row, index) => {
+      const rowNumber = row.querySelector("[data-row-number]");
+      if (rowNumber) {
+        rowNumber.textContent = `Element ${index + 1}`;
       }
     });
+    document.querySelector("[data-empty-state]")?.toggleAttribute("hidden", rowCount > 0);
   };
 
   addButton.addEventListener("click", () => {
@@ -179,9 +193,10 @@ function bindRows(onRowsChanged = () => {}) {
     if (rowCount >= maxRows) {
       return;
     }
+    const nextIndex = nextRowIndex(rowsContainer);
     const template = document.querySelector("[data-row-template]");
     const wrapper = document.createElement("div");
-    wrapper.innerHTML = template.innerHTML.replaceAll("__INDEX__", String(rowCount));
+    wrapper.innerHTML = template.innerHTML.replaceAll("__INDEX__", String(nextIndex));
     rowsContainer.append(wrapper.firstElementChild);
     updateRowControls();
     onRowsChanged();
@@ -205,13 +220,20 @@ function bindCalculatorForm(calculator) {
   }
 
   const updateResult = ({ showErrors = false } = {}) => {
+    const validation = validateCalculatorForm(form, calculator);
+    renderFieldValidation(form, validation, showErrors);
+    if (!validation.valid) {
+      renderInvalidResult(validation, { showSummary: showErrors || hasTouchedFields(form) });
+      return;
+    }
+
     try {
       const body = Object.fromEntries(new FormData(form));
       const calculation = calculateForCalculator({ pieces: collectPieces(body, calculator) }, calculator);
       renderBuyerResult(calculation, calculator);
     } catch (error) {
       if (error instanceof ValidationError) {
-        renderValidationState(error.message, showErrors);
+        renderInvalidResult({ errors: [], formErrors: [error.message], valid: false }, { showSummary: true });
         return;
       }
       throw error;
@@ -223,8 +245,14 @@ function bindCalculatorForm(calculator) {
     updateResult({ showErrors: true });
   });
 
-  form.addEventListener("input", () => updateResult());
-  form.addEventListener("change", () => updateResult());
+  form.addEventListener("input", (event) => {
+    markTouched(event.target);
+    updateResult();
+  });
+  form.addEventListener("change", (event) => {
+    markTouched(event.target);
+    updateResult();
+  });
   form.updateCalculation = updateResult;
   updateResult();
 }
@@ -233,7 +261,11 @@ function collectPieces(body, calculator) {
   const pieces = [];
   const firstKey = calculator.configuration?.dimensions?.first?.key ?? "width";
   const secondKey = calculator.configuration?.dimensions?.second?.key ?? "height";
-  for (let index = 0; index < 10; index += 1) {
+  const rowIndexes = Object.keys(body)
+    .map((key) => key.match(/^quantity_(.+)$/)?.[1])
+    .filter((index) => index !== undefined);
+
+  for (const index of rowIndexes) {
     const quantity = body[`quantity_${index}`];
     const first = body[`${firstKey}_${index}`];
     const second = body[`${secondKey}_${index}`];
@@ -260,41 +292,266 @@ function renderBuyerResult(calculation, calculator) {
   const result = calculation.result;
   const target = document.querySelector("#result");
   target.innerHTML = `
-    <div class="result-panel">
-      <p class="muted">${escapeHtml(calculator.calculatorName)}</p>
-      <h2>Kup ${result.purchasableItems} sztuk</h2>
-      <h3>Do uwag do zamówienia wklej</h3>
-      <pre id="marketplace-note">${escapeHtml(calculation.marketplaceNote)}</pre>
-      <div class="actions">
-        <button type="button" data-copy-target="marketplace-note">Kopiuj</button>
-      </div>
+    <div class="result-panel is-valid">
+      <section class="result-hero">
+        <p>Wynik obliczony automatycznie</p>
+        <h2>Kup ${formatPiecesQuantity(result.purchasableItems, "accusative")}</h2>
+        <span>Na podstawie podanych wymiarów i konfiguracji sprzedawcy.</span>
+      </section>
+      <section class="copy-panel">
+        <div class="section-heading compact">
+          <h3>Tekst do uwag zamówienia</h3>
+          <p>Skopiuj i wklej w wiadomości lub uwagach do sprzedawcy.</p>
+        </div>
+        <pre id="marketplace-note">${escapeHtml(calculation.marketplaceNote)}</pre>
+        <div class="actions">
+          <button type="button" data-copy-target="marketplace-note">Kopiuj tekst</button>
+          <span class="copy-feedback" data-copy-feedback aria-live="polite"></span>
+        </div>
+      </section>
       <details class="calculation-details">
-        <summary>Szczegóły kalkulacji</summary>
-        <h3>Elementy</h3>
-        <ul class="pieces">
-          ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, calculator))}</li>`).join("")}
-        </ul>
-        <dl>
-          ${sellerMetricsFor(result, calculator).map(([label, value]) => `
-            <div><dt>${escapeHtml(label)}:</dt><dd>${escapeHtml(value)}</dd></div>
-          `).join("")}
-        </dl>
+        <summary>Szczegóły obliczeń</summary>
+        <div class="details-grid">
+          ${renderTechnicalDetails(calculator)}
+          <section>
+            <h3>Elementy</h3>
+            <ul class="pieces">
+              ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, calculator))}</li>`).join("")}
+            </ul>
+          </section>
+          <section>
+            <h3>Parametry wyniku</h3>
+            <dl>
+              ${sellerMetricsFor(result, calculator).map(([label, value]) => `
+                <div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>
+              `).join("")}
+            </dl>
+          </section>
+        </div>
       </details>
     </div>
   `;
   target.querySelector("[data-copy-target]").addEventListener("click", async (event) => {
+    const feedback = target.querySelector("[data-copy-feedback]");
     const id = event.currentTarget.getAttribute("data-copy-target");
-    await navigator.clipboard.writeText(document.getElementById(id).textContent);
-    event.currentTarget.textContent = "Skopiowano";
+    try {
+      await navigator.clipboard.writeText(document.getElementById(id).textContent);
+      feedback.textContent = "Skopiowano";
+      feedback.className = "copy-feedback is-success";
+    } catch {
+      feedback.textContent = "Nie udało się skopiować";
+      feedback.className = "copy-feedback is-error";
+    }
   });
 }
 
-function renderValidationState(message, showErrors) {
+function renderTechnicalDetails(calculator) {
+  const rules = calculatorRuleChips(calculator);
+  if (rules.length === 0) {
+    return "";
+  }
+  return `
+    <section>
+      <h3>Reguły kalkulacji</h3>
+      <ul class="pieces">
+        ${rules.map((rule) => `<li>${escapeHtml(rule)}</li>`).join("")}
+      </ul>
+    </section>
+  `;
+}
+
+function renderInvalidResult(validation, { showSummary = false } = {}) {
   const target = document.querySelector("#result");
   if (!target) {
     return;
   }
-  target.innerHTML = showErrors ? `<p class="error">${escapeHtml(message)}</p>` : "";
+  const messages = [...validation.errors.map((error) => error.message), ...(validation.formErrors ?? [])];
+  const uniqueMessages = [...new Set(messages)];
+  target.innerHTML = `
+    <div class="result-panel is-invalid">
+      <section class="result-hero invalid-result">
+        <p>Wynik chwilowo niedostępny</p>
+        <h2>Uzupełnij poprawnie pola</h2>
+        <span>Popraw oznaczone dane, aby zobaczyć liczbę sztuk do kupienia.</span>
+      </section>
+      ${showSummary && uniqueMessages.length > 0 ? `
+        <div class="validation-summary">
+          <strong>Do poprawy:</strong>
+          <ul>${uniqueMessages.slice(0, 4).map((message) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>
+        </div>
+      ` : ""}
+    </div>
+  `;
+}
+
+function validateCalculatorForm(form, calculator) {
+  const config = calculator.configuration;
+  const firstDimension = config.dimensions?.first ?? { key: "width", label: "Szerokość" };
+  const secondDimension = config.dimensions?.second ?? { key: "height", label: "Wysokość" };
+  const errors = [];
+  const rows = [...form.querySelectorAll("[data-piece-row]")];
+
+  if (rows.length === 0) {
+    return { valid: false, errors: [], formErrors: ["Dodaj przynajmniej jeden element."] };
+  }
+
+  rows.forEach((row, visibleIndex) => {
+    const index = row.dataset.rowIndex;
+    const rowLabel = `Element ${visibleIndex + 1}`;
+    const quantity = validateQuantity(row, index, rowLabel, errors);
+    const firstValue = validateDimension(row, index, firstDimension, rowLabel, config, errors);
+    const secondValue = validateDimension(row, index, secondDimension, rowLabel, config, errors);
+    const decor = row.querySelector(`[name="decor_${cssEscape(index)}"]`)?.value?.trim() ?? "";
+
+    if (config.decor?.enabled && config.decor.required && !decor) {
+      addValidationError(errors, `decor_${index}`, `${rowLabel}: podaj wybrany dekor.`);
+    }
+
+    if (firstValue === null || secondValue === null || quantity === null) {
+      return;
+    }
+
+    if (config.constraints?.enforceSecondNotGreaterThanFirst && secondValue > firstValue) {
+      addValidationError(errors, `${secondDimension.key}_${index}`, `${rowLabel}: ${secondDimension.label.toLowerCase()} nie może być większa niż ${firstDimension.label.toLowerCase()}.`);
+    }
+
+    const perimeter = 2 * (firstValue + secondValue);
+    if (config.constraints?.maxPerimeterCm && perimeter > config.constraints.maxPerimeterCm) {
+      addValidationError(errors, `${secondDimension.key}_${index}`, `${rowLabel}: suma boków jednej formatki nie może przekroczyć ${formatLength(config.constraints.maxPerimeterCm, config)}.`);
+    }
+
+    const selectedEdges = ["top", "right", "bottom", "left"].filter((edge) => row.querySelector(`[name="edge_${edge}_${cssEscape(index)}"]`)?.checked);
+    const dimensions = {
+      [firstDimension.key]: firstValue,
+      [secondDimension.key]: secondValue,
+    };
+    for (const edge of selectedEdges) {
+      const edgeLength = edge === "top" || edge === "bottom"
+        ? dimensionValueFor("length", dimensions, config)
+        : dimensionValueFor("width", dimensions, config);
+      if (config.edges?.minFinishEdgeCm && edgeLength < config.edges.minFinishEdgeCm) {
+        addValidationError(errors, `edges_${index}`, `${rowLabel}: wykańczany bok musi mieć minimum ${formatLength(config.edges.minFinishEdgeCm, config)}.`);
+        break;
+      }
+    }
+  });
+
+  return { valid: errors.length === 0, errors, formErrors: [] };
+}
+
+function validateQuantity(row, index, rowLabel, errors) {
+  const name = `quantity_${index}`;
+  const value = row.querySelector(`[name="${cssEscape(name)}"]`)?.value;
+  const number = Number(value);
+  if (isBlank(value)) {
+    addValidationError(errors, name, `${rowLabel}: podaj ilość.`);
+    return null;
+  }
+  if (!Number.isInteger(number) || number <= 0) {
+    addValidationError(errors, name, `${rowLabel}: ilość musi być liczbą całkowitą większą od 0.`);
+    return null;
+  }
+  return number;
+}
+
+function validateDimension(row, index, dimension, rowLabel, config, errors) {
+  const name = `${dimension.key}_${index}`;
+  const value = row.querySelector(`[name="${cssEscape(name)}"]`)?.value;
+  const displayNumber = Number(value);
+  if (isBlank(value)) {
+    addValidationError(errors, name, `${rowLabel}: podaj ${dimension.label.toLowerCase()}.`);
+    return null;
+  }
+  if (!Number.isFinite(displayNumber) || displayNumber <= 0) {
+    addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} musi być liczbą większą od 0.`);
+    return null;
+  }
+
+  const valueCm = displayNumber * (config.displayUnit === "m" ? 100 : 1);
+  const minimum = minimumForDimension(dimension.key, config);
+  const maximum = maximumForDimension(dimension.key, config);
+  if (minimum && valueCm < minimum) {
+    addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} musi mieć minimum ${formatLength(minimum, config)}.`);
+  }
+  if (maximum && valueCm > maximum) {
+    addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} nie może przekroczyć ${formatLength(maximum, config)}.`);
+  }
+  if (Array.isArray(dimension.allowedValuesCm) && dimension.allowedValuesCm.length > 0) {
+    const allowed = dimension.allowedValuesCm.some((allowedValue) => Math.abs(Number(allowedValue) - valueCm) < 0.000001);
+    if (!allowed) {
+      addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} wybierz z listy dostępnych wartości.`);
+    }
+  }
+  return errors.some((error) => error.field === name) ? null : valueCm;
+}
+
+function addValidationError(errors, field, message) {
+  errors.push({ field, message });
+}
+
+function renderFieldValidation(form, validation, showAllErrors) {
+  form.querySelectorAll(".field").forEach((field) => {
+    field.classList.remove("has-error");
+    const error = field.querySelector(".field-error");
+    if (error) {
+      error.textContent = "";
+    }
+    field.querySelectorAll("input, select").forEach((control) => {
+      control.removeAttribute("aria-invalid");
+    });
+  });
+  form.querySelectorAll("[data-piece-row]").forEach((row) => row.classList.remove("has-error"));
+
+  for (const error of validation.errors) {
+    const field = form.querySelector(`[data-field="${cssEscape(error.field)}"]`);
+    if (!field) {
+      continue;
+    }
+    const control = field.querySelector("input, select");
+    const shouldShow = showAllErrors || field.dataset.touched === "true" || control?.dataset.touched === "true";
+    if (!shouldShow) {
+      continue;
+    }
+    field.classList.add("has-error");
+    field.closest("[data-piece-row]")?.classList.add("has-error");
+    const errorTarget = field.querySelector(".field-error");
+    if (errorTarget) {
+      errorTarget.textContent = error.message;
+    }
+    control?.setAttribute("aria-invalid", "true");
+  }
+}
+
+function markTouched(target) {
+  if (!target?.matches?.("input, select")) {
+    return;
+  }
+  target.dataset.touched = "true";
+  target.closest(".field")?.setAttribute("data-touched", "true");
+}
+
+function hasTouchedFields(form) {
+  return Boolean(form.querySelector("[data-touched='true']"));
+}
+
+function nextRowIndex(rowsContainer) {
+  const indexes = [...rowsContainer.querySelectorAll("[data-piece-row]")]
+    .map((row) => Number(row.dataset.rowIndex))
+    .filter(Number.isFinite);
+  return indexes.length > 0 ? Math.max(...indexes) + 1 : 0;
+}
+
+function calculatorRuleChips(calculator) {
+  const config = calculator.configuration;
+  const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
+  const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
+  return [
+    ...rectangularRuleChips(config),
+    config.edges?.minFinishEdgeCm ? `${config.edges.label ?? "Wykończenie"}: bok min. ${formatLength(config.edges.minFinishEdgeCm, config)}` : null,
+    config.constraints?.maxPerimeterCm ? `Max suma boków ${formatLength(config.constraints.maxPerimeterCm, config)}` : null,
+    config.constraints?.maxFirstCm ? `Max ${firstDimension.label.toLowerCase()} ${formatLength(config.constraints.maxFirstCm, config)}` : null,
+    config.constraints?.maxSecondCm ? `Max ${secondDimension.label.toLowerCase()} ${formatLength(config.constraints.maxSecondCm, config)}` : null,
+  ].filter(Boolean);
 }
 
 function rectangularRuleChips(config) {
@@ -324,38 +581,106 @@ function renderEdgePicker(index, config) {
     return "";
   }
 
-  return `<fieldset class="edge-picker" aria-label="${escapeHtml(config.edges.label ?? "Wykończenie")}">
-    ${["top", "right", "bottom", "left"].map((edge) => `
-      <label class="edge-toggle edge-${edge}">
-        <input type="checkbox" name="edge_${edge}_${index}" ${checkedEdge(config, edge)}>
-        <span>${edgeLabel(edge)}</span>
-      </label>
-    `).join("")}
-    <div class="board-preview" aria-hidden="true">
-      <span>${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
+  return `
+    <div class="field edge-field" data-field="edges_${index}">
+      <span class="field-label">${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
+      <fieldset class="edge-picker" aria-label="${escapeHtml(config.edges.label ?? "Wykończenie")}">
+        ${["top", "right", "bottom", "left"].map((edge) => `
+          <label class="edge-toggle edge-${edge}">
+            <input type="checkbox" name="edge_${edge}_${index}" ${checkedEdge(config, edge)}>
+            <span>${edgeLabel(edge)}</span>
+          </label>
+        `).join("")}
+        <div class="board-preview" aria-hidden="true">
+          <span>Boki</span>
+        </div>
+      </fieldset>
+      <span class="field-error" aria-live="polite"></span>
     </div>
-  </fieldset>`;
+  `;
 }
 
 function renderDimensionInput(dimension, index, config) {
+  return renderDimensionField(dimension, index, config);
+}
+
+function renderQuantityField(index) {
+  const name = `quantity_${index}`;
+  return renderField({
+    name,
+    label: "Ilość",
+    guidance: "Liczba sztuk tego elementu",
+    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="1" step="1" value="1" inputmode="numeric" required>`,
+  });
+}
+
+function renderDecorField(index, config) {
+  const name = `decor_${index}`;
+  return renderField({
+    name,
+    label: config.decor?.label ?? "Dekor",
+    guidance: config.decor?.required ? "Pole wymagane" : "Opcjonalnie",
+    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="text" autocomplete="off" ${config.decor?.required ? "required" : ""}>`,
+  });
+}
+
+function renderDimensionField(dimension, index, config) {
   const name = `${dimension.key}_${index}`;
   const unit = config.displayUnit ?? "cm";
-  const label = `${dimension.label} ${unit}`;
+  const label = dimension.label;
   if (Array.isArray(dimension.allowedValuesCm) && dimension.allowedValuesCm.length > 0) {
-    return `<select name="${escapeHtml(name)}" required aria-label="${escapeHtml(label)}">
-      <option value="">${escapeHtml(label)}</option>
-      ${dimension.allowedValuesCm.map((value) => {
-        const displayValue = fromCentimeters(value, unit);
-        const normalized = String(Number(displayValue));
-        return `<option value="${escapeHtml(normalized)}">${escapeHtml(formatMetric(displayValue))} ${escapeHtml(unit)}</option>`;
-      }).join("")}
-    </select>`;
+    return renderField({
+      name,
+      label,
+      unit,
+      guidance: "Wybierz dostępną wartość",
+      control: `<select id="${escapeHtml(name)}" name="${escapeHtml(name)}" required>
+        <option value="">Wybierz</option>
+        ${dimension.allowedValuesCm.map((value) => {
+          const displayValue = fromCentimeters(value, unit);
+          const normalized = String(Number(displayValue));
+          return `<option value="${escapeHtml(normalized)}">${escapeHtml(formatMetric(displayValue))} ${escapeHtml(unit)}</option>`;
+        }).join("")}
+      </select>`,
+    });
   }
 
   const min = formatMetric(fromCentimeters(minimumForDimension(dimension.key, config) ?? 0.01, unit)).replace(",", ".");
   const max = maximumForDimension(dimension.key, config);
   const maxAttribute = max ? ` max="${formatMetric(fromCentimeters(max, unit)).replace(",", ".")}"` : "";
-  return `<input name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="0.01" placeholder="${escapeHtml(label)}" required>`;
+  return renderField({
+    name,
+    label,
+    unit,
+    guidance: dimensionGuidance(dimension, config),
+    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="0.01" inputmode="decimal" required>`,
+  });
+}
+
+function renderField({ name, label, unit = "", guidance = "", control }) {
+  return `
+    <label class="field" data-field="${escapeHtml(name)}">
+      <span class="field-label">${escapeHtml(label)}${unit ? ` <span>${escapeHtml(unit)}</span>` : ""}</span>
+      ${control}
+      ${guidance ? `<span class="field-guidance">${escapeHtml(guidance)}</span>` : ""}
+      <span class="field-error" aria-live="polite"></span>
+    </label>
+  `;
+}
+
+function dimensionGuidance(dimension, config) {
+  const min = minimumForDimension(dimension.key, config);
+  const max = maximumForDimension(dimension.key, config);
+  if (min && max) {
+    return `${formatLength(min, config)} - ${formatLength(max, config)}`;
+  }
+  if (min) {
+    return `Minimum ${formatLength(min, config)}`;
+  }
+  if (max) {
+    return `Maksimum ${formatLength(max, config)}`;
+  }
+  return "Podaj wymiar";
 }
 
 function minimumForDimension(key, config) {
@@ -412,6 +737,26 @@ function areaUnitLabel(areaUnit) {
 
 function fromCentimeters(valueCm, unit) {
   return valueCm / (unit === "m" ? 100 : 1);
+}
+
+function dimensionValueFor(key, dimensions, config) {
+  if (dimensions[key] !== undefined) {
+    return dimensions[key];
+  }
+  if (key === "length") {
+    return dimensions[config.dimensions?.first?.key] ?? dimensions[config.dimensions?.second?.key];
+  }
+  if (key === "width") {
+    return dimensions.width ?? dimensions[config.dimensions?.second?.key] ?? dimensions[config.dimensions?.first?.key];
+  }
+  return dimensions[key];
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) {
+    return CSS.escape(String(value));
+  }
+  return String(value).replaceAll('"', '\\"');
 }
 
 function formatLength(valueCm, config) {
