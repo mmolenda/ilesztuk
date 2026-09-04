@@ -184,6 +184,10 @@ function bindRows(onRowsChanged = () => {}) {
       if (rowNumber) {
         rowNumber.textContent = `Element ${index + 1}`;
       }
+      const removeButton = row.querySelector("[data-remove-row]");
+      if (removeButton) {
+        removeButton.hidden = rowCount <= 1;
+      }
     });
     document.querySelector("[data-empty-state]")?.toggleAttribute("hidden", rowCount > 0);
   };
@@ -592,7 +596,7 @@ function renderEdgePicker(index, config) {
           </label>
         `).join("")}
         <div class="board-preview" aria-hidden="true">
-          <span>Boki</span>
+          <span>${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
         </div>
       </fieldset>
       <span class="field-error" aria-live="polite"></span>
@@ -645,7 +649,7 @@ function renderDimensionField(dimension, index, config) {
     });
   }
 
-  const min = formatMetric(fromCentimeters(minimumForDimension(dimension.key, config) ?? 0.01, unit)).replace(",", ".");
+  const min = browserMinimumForNumberInput(dimension.key, config);
   const max = maximumForDimension(dimension.key, config);
   const maxAttribute = max ? ` max="${formatMetric(fromCentimeters(max, unit)).replace(",", ".")}"` : "";
   return renderField({
@@ -653,8 +657,14 @@ function renderDimensionField(dimension, index, config) {
     label,
     unit,
     guidance: dimensionGuidance(dimension, config),
-    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="0.01" inputmode="decimal" required>`,
+    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="1" inputmode="decimal" required>`,
   });
+}
+
+function browserMinimumForNumberInput(dimensionKey, config) {
+  const unit = config.displayUnit ?? "cm";
+  const configuredMinimum = fromCentimeters(minimumForDimension(dimensionKey, config) ?? 0.01, unit);
+  return String(Math.max(1, configuredMinimum));
 }
 
 function renderField({ name, label, unit = "", guidance = "", control }) {

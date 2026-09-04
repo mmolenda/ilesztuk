@@ -321,6 +321,11 @@ form {
   width: 100%;
 }
 
+.edge-toggle:hover input:not(:disabled) + span {
+  border-color: var(--primary-border);
+  background: var(--primary-subtle);
+}
+
 .edge-toggle input:checked + span {
   background: var(--primary-subtle);
   border-color: var(--primary);
