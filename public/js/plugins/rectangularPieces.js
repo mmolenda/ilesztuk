@@ -351,7 +351,6 @@ function sellerMetrics(result) {
     result.totalAreaForPricing !== result.totalArea
       ? ["Powierzchnia po zaokrągleniach", `${formatMetric(result.totalAreaForPricing)} ${areaUnitLabel(result.areaUnit)}`]
       : null,
-    result.totalCoatedEdgeCm ? ["Łączna długość oklejenia", formatLength(result.totalCoatedEdgeCm, { displayUnit: result.displayUnit })] : null,
     pricingMetric(result.pricing),
     result.limits.maxPerimeterCm ? ["Limit sumy boków", formatLength(result.limits.maxPerimeterCm, { displayUnit: result.displayUnit })] : null,
     result.limits.maxFirstCm ? [`Maks. ${result.dimensionLabels?.first ?? "pierwszy wymiar"}`, formatLength(result.limits.maxFirstCm, { displayUnit: result.displayUnit })] : null,

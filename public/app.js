@@ -384,9 +384,6 @@ function renderBuyerDetails(calculation, calculator) {
       <h3>Podsumowanie</h3>
       <dl class="details-totals">
         ${renderDetailsTotal("Łączna powierzchnia", formatBuyerArea(result.totalArea, result.areaUnit))}
-        ${config.edges?.enabled && result.totalCoatedEdgeCm > 0
-          ? renderDetailsTotal(`Łączna długość (${edgeFinishingLabel(config)})`, formatBuyerLength(result.totalCoatedEdgeCm))
-          : ""}
         ${renderDetailsTotal("Do kupienia", formatPiecesQuantity(result.purchasableItems))}
       </dl>
     </section>
@@ -461,12 +458,6 @@ function formatBuyerArea(value, unit) {
     return `${formatMetric(value / 10_000)} m²`;
   }
   return `${formatMetric(value)} cm²`;
-}
-
-function formatBuyerLength(valueCm) {
-  return valueCm >= 100
-    ? `${formatMetric(valueCm / 100)} m`
-    : `${formatMetric(valueCm)} cm`;
 }
 
 function buyerOrderingRules(config) {
