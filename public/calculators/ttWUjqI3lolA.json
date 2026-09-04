@@ -23,6 +23,9 @@
       "label": "Oklejenie",
       "minFinishEdgeCm": 8
     },
+    "customFields": [{
+      "label": "decor", "allowedValues": ["one", "two"]
+    }],
     "constraints": {
       "maxPerimeterCm": 460,
       "enforceSecondNotGreaterThanFirst": false

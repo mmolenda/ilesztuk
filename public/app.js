@@ -65,7 +65,7 @@ function renderCalculatorPage(calculator, error = "") {
 function usesGraphicalRectangularCalculatorForm(calculator) {
   return Boolean(
     calculator.configuration.edges?.enabled
-      || calculator.configuration.decor?.enabled
+      || customFieldDefinitions(calculator.configuration).length > 0
       || calculator.configuration.dimensions?.first?.key === "length"
       || calculator.configuration.dimensions?.second?.key === "length",
   );
@@ -150,7 +150,7 @@ function renderFurnitureRow(index, calculator) {
   const noteOrder = config.dimensions?.noteOrder ?? [firstDimension.key, secondDimension.key];
   const firstInput = renderDimensionInput(dimensionForKey(noteOrder[0], config), index, config);
   const secondInput = renderDimensionInput(dimensionForKey(noteOrder[1], config), index, config);
-  const decorInput = config.decor?.enabled ? renderDecorField(index, config) : "";
+  const customFields = renderCustomFields(index, config);
 
   return `
     <div class="furniture-row ${config.edges?.enabled ? "" : "no-edge-picker"}" data-piece-row data-row-index="${index}">
@@ -159,7 +159,7 @@ function renderFurnitureRow(index, calculator) {
         ${renderQuantityField(index)}
         ${firstInput}
         ${secondInput}
-        ${decorInput}
+        ${customFields}
       </div>
       ${renderEdgePicker(index, config)}
       <button type="button" class="remove-row-button" data-remove-row aria-label="Usuń element">Usuń</button>
@@ -281,11 +281,18 @@ function collectPieces(body, calculator) {
       quantity,
       [firstKey]: first,
       [secondKey]: second,
-      decor: body[`decor_${index}`] ?? "",
+      customFields: collectCustomFieldValues(body, index, calculator.configuration),
       edges: ["top", "right", "bottom", "left"].filter((edge) => body[`edge_${edge}_${index}`] === "on"),
     });
   }
   return pieces;
+}
+
+function collectCustomFieldValues(body, rowIndex, config) {
+  return customFieldDefinitions(config).map((field, fieldIndex) => ({
+    label: field.label,
+    value: body[`custom_${fieldIndex}_${rowIndex}`] ?? "",
+  }));
 }
 
 function isBlank(value) {
@@ -405,11 +412,7 @@ function validateCalculatorForm(form, calculator) {
     const quantity = validateQuantity(row, index, rowLabel, errors);
     const firstValue = validateDimension(row, index, firstDimension, rowLabel, config, errors);
     const secondValue = validateDimension(row, index, secondDimension, rowLabel, config, errors);
-    const decor = row.querySelector(`[name="decor_${cssEscape(index)}"]`)?.value?.trim() ?? "";
-
-    if (config.decor?.enabled && config.decor.required && !decor) {
-      addValidationError(errors, `decor_${index}`, `${rowLabel}: podaj wybrany dekor.`);
-    }
+    validateCustomFields(row, index, rowLabel, config, errors);
 
     if (firstValue === null || secondValue === null || quantity === null) {
       return;
@@ -487,6 +490,20 @@ function validateDimension(row, index, dimension, rowLabel, config, errors) {
     }
   }
   return errors.some((error) => error.field === name) ? null : valueCm;
+}
+
+function validateCustomFields(row, rowIndex, rowLabel, config, errors) {
+  customFieldDefinitions(config).forEach((field, fieldIndex) => {
+    const name = `custom_${fieldIndex}_${rowIndex}`;
+    const value = row.querySelector(`[name="${cssEscape(name)}"]`)?.value?.trim() ?? "";
+    if (field.required && !value) {
+      addValidationError(errors, name, `${rowLabel}: podaj ${field.label.toLowerCase()}.`);
+      return;
+    }
+    if (value && field.allowedValues.length > 0 && !field.allowedValues.includes(value)) {
+      addValidationError(errors, name, `${rowLabel}: ${field.label.toLowerCase()} wybierz z listy dostępnych wartości.`);
+    }
+  });
 }
 
 function addValidationError(errors, field, message) {
@@ -618,14 +635,47 @@ function renderQuantityField(index) {
   });
 }
 
-function renderDecorField(index, config) {
-  const name = `decor_${index}`;
+function renderCustomFields(rowIndex, config) {
+  return customFieldDefinitions(config)
+    .map((field, fieldIndex) => renderCustomField(field, fieldIndex, rowIndex))
+    .join("");
+}
+
+function renderCustomField(field, fieldIndex, rowIndex) {
+  const name = `custom_${fieldIndex}_${rowIndex}`;
+  const required = field.required ? "required" : "";
+  if (field.allowedValues.length > 0) {
+    return renderField({
+      name,
+      label: field.label,
+      guidance: field.required ? "Pole wymagane" : "Opcjonalnie",
+      control: `<select id="${escapeHtml(name)}" name="${escapeHtml(name)}" ${required}>
+        <option value="">Wybierz</option>
+        ${field.allowedValues.map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`).join("")}
+      </select>`,
+    });
+  }
   return renderField({
     name,
-    label: config.decor?.label ?? "Dekor",
-    guidance: config.decor?.required ? "Pole wymagane" : "Opcjonalnie",
-    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="text" autocomplete="off" ${config.decor?.required ? "required" : ""}>`,
+    label: field.label,
+    guidance: field.required ? "Pole wymagane" : "Opcjonalnie",
+    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="text" autocomplete="off" ${required}>`,
   });
+}
+
+function customFieldDefinitions(config) {
+  if (!Array.isArray(config.customFields)) {
+    return [];
+  }
+  return config.customFields.map((field) => ({
+    label: String(field?.label ?? "").trim(),
+    required: Boolean(field?.required),
+    allowedValues: Array.isArray(field?.allowedValues)
+      ? field.allowedValues.map((value) => String(value))
+      : Array.isArray(field?.allowedvalues)
+        ? field.allowedvalues.map((value) => String(value))
+        : [],
+  })).filter((field) => field.label);
 }
 
 function renderDimensionField(dimension, index, config) {

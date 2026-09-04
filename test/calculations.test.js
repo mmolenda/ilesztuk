@@ -164,10 +164,9 @@ describe("validation and calculation", () => {
       ...furnitureCalculator,
       configuration: {
         ...furnitureCalculator.configuration,
-        decor: {
-          enabled: true,
-          required: true,
-        },
+        customFields: [
+          { label: "Dekor", required: true, allowedValues: [] },
+        ],
         edges: {
           enabled: true,
           default: [],
@@ -184,13 +183,13 @@ describe("validation and calculation", () => {
 
     assert.throws(
       () => validateBuyerInput({
-        pieces: [{ quantity: 1, length: 100, width: 8, decor: "Dąb", edges: [] }],
+        pieces: [{ quantity: 1, length: 100, width: 8, customFields: [{ value: "Dąb" }], edges: [] }],
       }, calculator),
       /szerokość musi mieć minimum 21 cm/,
     );
 
     const calculation = calculateForCalculator({
-      pieces: [{ quantity: 1, length: 100, width: 21, decor: "Dąb", edges: [] }],
+      pieces: [{ quantity: 1, length: 100, width: 21, customFields: [{ value: "Dąb" }], edges: [] }],
     }, calculator);
 
     assert.equal(calculation.result.totalArea, 2100);
@@ -198,15 +197,14 @@ describe("validation and calculation", () => {
     assert.equal(calculation.marketplaceNote, "1x 100 cm x 21 cm, bez oklejenia, dekor: Dąb");
   });
 
-  it("requires decor and applies configured edge minimums", () => {
-    const decorCalculator = {
+  it("requires custom fields, validates allowed values, and applies configured edge minimums", () => {
+    const customFieldCalculator = {
       ...furnitureCalculator,
       configuration: {
         ...furnitureCalculator.configuration,
-        decor: {
-          enabled: true,
-          required: true,
-        },
+        customFields: [
+          { label: "Dekor", required: true, allowedValues: ["Dąb", "Buk"] },
+        ],
       },
     };
     const edge15Calculator = {
@@ -227,9 +225,16 @@ describe("validation and calculation", () => {
 
     assert.throws(
       () => validateBuyerInput({
-        pieces: [{ quantity: 1, length: 100, width: 8, decor: "", edges: [] }],
-      }, decorCalculator),
-      /podaj wybrany dekor/,
+        pieces: [{ quantity: 1, length: 100, width: 8, customFields: [{ value: "" }], edges: [] }],
+      }, customFieldCalculator),
+      /podaj dekor/,
+    );
+
+    assert.throws(
+      () => validateBuyerInput({
+        pieces: [{ quantity: 1, length: 100, width: 8, customFields: [{ value: "Orzech" }], edges: [] }],
+      }, customFieldCalculator),
+      /dekor wybierz z listy dostępnych wartości/,
     );
 
     assert.throws(

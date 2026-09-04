@@ -44,10 +44,7 @@ export const DEFAULT_RECTANGULAR_CONFIG = Object.freeze({
     default: [],
     minFinishEdgeCm: null,
   },
-  decor: {
-    enabled: false,
-    required: false,
-  },
+  customFields: [],
   constraints: {
     minFirstCm: 0.01,
     minSecondCm: 0.01,
@@ -119,10 +116,7 @@ export function rectangularConfig(config = {}) {
       ...DEFAULT_RECTANGULAR_CONFIG.edges,
       ...config.edges,
     },
-    decor: {
-      ...DEFAULT_RECTANGULAR_CONFIG.decor,
-      ...config.decor,
-    },
+    customFields: normalizeCustomFieldDefinitions(config.customFields),
     constraints: {
       ...DEFAULT_RECTANGULAR_CONFIG.constraints,
       ...config.constraints,
@@ -155,7 +149,7 @@ function validateInput(input, calculator, { ValidationError }) {
         [secondDimension.key]: secondValue,
       };
       const edges = config.edges.enabled ? normalizeEdges(piece.edges) : [];
-      const decor = config.decor.enabled ? String(piece.decor ?? "").trim() : "";
+      const customFields = collectCustomFields(piece, config);
 
       validateConstraints({
         rowLabel,
@@ -166,7 +160,7 @@ function validateInput(input, calculator, { ValidationError }) {
         firstKey: firstDimension.key,
         secondKey: secondDimension.key,
         edges,
-        decor,
+        customFields,
         config,
         ValidationError,
       });
@@ -175,7 +169,7 @@ function validateInput(input, calculator, { ValidationError }) {
         quantity,
         ...dimensions,
         edges,
-        decor,
+        customFields,
         unit: config.displayUnit,
       };
     }),
@@ -259,7 +253,7 @@ function validateConstraints({
   firstKey,
   secondKey,
   edges,
-  decor,
+  customFields,
   config,
   ValidationError,
 }) {
@@ -276,9 +270,7 @@ function validateConstraints({
   if (config.constraints.maxPerimeterCm && perimeter > config.constraints.maxPerimeterCm) {
     throw new ValidationError(`${rowLabel}: suma boków jednej formatki nie może przekroczyć ${formatLength(config.constraints.maxPerimeterCm, config)}.`);
   }
-  if (config.decor.required && !decor) {
-    throw new ValidationError(`${rowLabel}: podaj wybrany dekor.`);
-  }
+  validateCustomFields(rowLabel, customFields, config.customFields, ValidationError);
 
   for (const edge of edges) {
     const edgeLength = edge === "top" || edge === "bottom"
@@ -322,7 +314,7 @@ function formatPieceLine(piece, calculator = null) {
   if (calculator) {
     return formatPieceForCalculator(piece, calculator);
   }
-  return formatPiece(piece, DEFAULT_RECTANGULAR_CONFIG.dimensions.noteOrder, { edges: { enabled: false }, decor: { enabled: false } });
+  return formatPiece(piece, DEFAULT_RECTANGULAR_CONFIG.dimensions.noteOrder, { edges: { enabled: false }, customFields: [] });
 }
 
 function formatPieceForCalculator(piece, calculator) {
@@ -333,8 +325,8 @@ function formatPieceForCalculator(piece, calculator) {
 function formatPiece(piece, noteOrder, config) {
   const [firstKey, secondKey] = noteOrder;
   const edgeText = config.edges.enabled ? formatEdges(piece.edges) : "";
-  const decorText = config.decor.enabled && piece.decor ? `, dekor: ${piece.decor}` : "";
-  return `${piece.quantity}x ${formatLength(piece[firstKey], config)} x ${formatLength(piece[secondKey], config)}${edgeText}${decorText}`;
+  const customFieldsText = formatCustomFields(piece.customFields);
+  return `${piece.quantity}x ${formatLength(piece[firstKey], config)} x ${formatLength(piece[secondKey], config)}${edgeText}${customFieldsText}`;
 }
 
 function sellerMetrics(result) {
@@ -395,8 +387,49 @@ function pieceKey(piece, config) {
     ...config.dimensions.noteOrder.map((key) => piece[key]),
     piece.unit,
     piece.edges?.join(",") ?? "",
-    piece.decor ?? "",
+    ...(piece.customFields ?? []).map((field) => `${field.label}:${field.value}`),
   ].join(":");
+}
+
+function normalizeCustomFieldDefinitions(fields) {
+  if (!Array.isArray(fields)) {
+    return [];
+  }
+  return fields.map((field) => ({
+    label: String(field?.label ?? "").trim(),
+    required: Boolean(field?.required),
+    allowedValues: Array.isArray(field?.allowedValues)
+      ? field.allowedValues.map((value) => String(value))
+      : Array.isArray(field?.allowedvalues)
+        ? field.allowedvalues.map((value) => String(value))
+        : [],
+  })).filter((field) => field.label);
+}
+
+function collectCustomFields(piece, config) {
+  return config.customFields.map((definition, index) => ({
+    label: definition.label,
+    value: String(piece.customFields?.[index]?.value ?? piece.customFields?.[index] ?? "").trim(),
+  }));
+}
+
+function validateCustomFields(rowLabel, fields, definitions, ValidationError) {
+  fields.forEach((field, index) => {
+    const definition = definitions[index];
+    if (definition.required && !field.value) {
+      throw new ValidationError(`${rowLabel}: podaj ${definition.label.toLowerCase()}.`);
+    }
+    if (field.value && definition.allowedValues.length > 0 && !definition.allowedValues.includes(field.value)) {
+      throw new ValidationError(`${rowLabel}: ${definition.label.toLowerCase()} wybierz z listy dostępnych wartości.`);
+    }
+  });
+}
+
+function formatCustomFields(fields = []) {
+  const values = fields
+    .filter((field) => field.value)
+    .map((field) => `, ${field.label.toLowerCase()}: ${field.value}`);
+  return values.join("");
 }
 
 function normalizeEdges(value) {

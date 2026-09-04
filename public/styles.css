@@ -292,6 +292,12 @@ form {
   grid-template-columns: 104px minmax(0, 1fr) auto;
 }
 
+.furniture-row.no-edge-picker .furniture-fields {
+  grid-template-columns: minmax(74px, 90px) repeat(auto-fit, minmax(130px, 180px));
+  justify-content: start;
+  max-width: 760px;
+}
+
 .edge-toggle {
   align-items: center;
   cursor: pointer;
