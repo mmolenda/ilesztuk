@@ -964,7 +964,7 @@ function renderSiteFooter() {
   siteFooter.className = "site-footer";
   siteFooter.innerHTML = `
     <div class="footer-inner">
-      <div class="footer-brand"><strong>IleSztuk</strong><p>Kalkulatory zamówień dla e-commerce.</p></div>
+      <div class="footer-brand"><strong>IleSztuk</strong><p>Kalkulatory zamówień dla Allegro i e-commerce.</p></div>
       <nav class="footer-nav" aria-label="Stopka"><a href="${DEMO_CALCULATOR_URL}">Demo</a><a href="/#kontakt">Kontakt</a></nav>
       <div class="footer-business"><span>Marcin Molenda</span><span>NIP 5252298622</span><span>© 2026 IleSztuk</span></div>
     </div>
