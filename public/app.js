@@ -932,10 +932,10 @@ function dimensionValueFor(key, dimensions, config) {
     return dimensions[key];
   }
   if (key === "length") {
-    return dimensions[config.dimensions?.first?.key] ?? dimensions[config.dimensions?.second?.key];
+    return dimensions.length ?? dimensions[config.dimensions?.second?.key] ?? dimensions[config.dimensions?.first?.key];
   }
   if (key === "width") {
-    return dimensions.width ?? dimensions[config.dimensions?.second?.key] ?? dimensions[config.dimensions?.first?.key];
+    return dimensions.width ?? dimensions[config.dimensions?.first?.key] ?? dimensions[config.dimensions?.second?.key];
   }
   return dimensions[key];
 }

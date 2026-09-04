@@ -468,10 +468,10 @@ function dimensionValue(key, piece, config = DEFAULT_RECTANGULAR_CONFIG) {
     return piece[key];
   }
   if (key === "length") {
-    return piece[config.dimensions.first.key] ?? piece[config.dimensions.second.key];
+    return piece.length ?? piece[config.dimensions.second.key] ?? piece[config.dimensions.first.key];
   }
   if (key === "width") {
-    return piece.width ?? piece[config.dimensions.second.key] ?? piece[config.dimensions.first.key];
+    return piece.width ?? piece[config.dimensions.first.key] ?? piece[config.dimensions.second.key];
   }
   return piece[key];
 }

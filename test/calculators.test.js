@@ -50,17 +50,17 @@ describe("static calculators", () => {
   it("loads only the requested matching calculator file", async () => {
     const previousFetch = globalThis.fetch;
     globalThis.fetch = async (url) => {
-      assert.equal(url, "/calculators/gyLKW5IAn5Es.json");
+      assert.equal(url, "/calculators/8ukq6mwKY5ft.json");
       return {
         ok: true,
-        json: async () => JSON.parse(await readFile(path.join(calculatorsDir, "gyLKW5IAn5Es.json"), "utf8")),
+        json: async () => JSON.parse(await readFile(path.join(calculatorsDir, "8ukq6mwKY5ft.json"), "utf8")),
       };
     };
 
     try {
-      const calculator = await loadCalculator("gyLKW5IAn5Es");
-      assert.equal(calculator.calculatorId, "gyLKW5IAn5Es");
-      assert.equal(calculator.calculatorName, "Panele na wymiar - przelicznik x20");
+      const calculator = await loadCalculator("8ukq6mwKY5ft");
+      assert.equal(calculator.calculatorId, "8ukq6mwKY5ft");
+      assert.equal(calculator.calculatorName, "Formatka meblowa na wymiar");
     } finally {
       globalThis.fetch = previousFetch;
     }

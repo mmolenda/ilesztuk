@@ -1,8 +1,9 @@
 {
-  "customerId": "ilesztuk-demo",
-  "customerName": "IleSztuk Demo",
-  "calculatorId": "aRgmmnhr0Te2",
-  "calculatorName": "Formatki meblowe z oklejeniem",
+  "customerId": "FormatkaHQ",
+  "customerName": "FormatkaHQ",
+  "customerUrl": "https://www.ilesztuk.pl",
+  "calculatorId": "8ukq6mwKY5ft",
+  "calculatorName": "Formatka meblowa na wymiar",
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",
@@ -13,7 +14,7 @@
     },
     "pricing": {
       "areaUnit": "cm2",
-      "coefficient": 0.01
+      "coefficient": 0.0137
     },
     "purchasableQuantity": {
       "rounding": { "mode": "round", "precision": 0 }
@@ -21,13 +22,18 @@
     "edges": {
       "enabled": true,
       "label": "Oklejenie",
-      "minFinishEdgeCm": 8
+      "minFinishEdgeCm": 5
     },
+    "customFields": [
+      {
+        "label": "Wykończenie",
+        "required": false,
+        "allowedValues": ["mat", "połysk"]
+      }
+    ],
     "constraints": {
-      "minFirstCm": 8,
-      "minSecondCm": 8,
-      "maxPerimeterCm": 460,
-      "enforceSecondNotGreaterThanFirst": true
+      "maxPerimeterCm": 500,
+      "enforceSecondNotGreaterThanFirst": false
     }
   }
 }
