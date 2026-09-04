@@ -125,7 +125,7 @@ The `rectangular_pieces` plugin supports rectangular pieces with configurable di
 
 Configuration areas:
 
-- `displayUnit`: display unit, currently centimeters.
+- `displayUnit`: buyer input and output unit, currently `cm` or `m`.
 - `dimensions`: first/second dimension keys, labels, marketplace-note order, optional fixed `allowedValuesCm`, and optional dimension rounding.
 - `pricing`: area unit plus one coefficient used to convert area into purchasable items.
 - `rowArea.rounding`: optional per-row area rounding before summing.
@@ -134,6 +134,8 @@ Configuration areas:
 - `edges`: optional edge finishing UI and validation.
 - `decor`: optional decor input and required validation.
 - `constraints`: minimum and maximum values for the first/second configured dimensions, maximum perimeter, and second-dimension ordering rule.
+
+The rectangular plugin stores dimension limits and fixed dimension lists in centimeters through `*Cm` fields, even when buyers enter values in meters. For example, a calculator with `displayUnit: "m"` and `allowedValuesCm: [200, 300, 400]` renders choices as `2 m`, `3 m`, and `4 m`, then converts the submitted value back to centimeters before validation and calculation.
 
 `purchasableUnitLabel` is not configurable. Buyer-facing results always use `sztuk`.
 

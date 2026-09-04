@@ -314,7 +314,54 @@ describe("validation and calculation", () => {
       () => validateBuyerInput({
         pieces: [{ quantity: 1, width: 45, height: 40 }],
       }, calculator),
-      /szerokość musi mieć jedną z wartości: 30, 60, 90 cm/,
+      /szerokość musi mieć jedną z wartości: 30 cm, 60 cm, 90 cm/,
+    );
+  });
+
+  it("supports meter input while calculating internally in centimeters", () => {
+    const calculator = {
+      ...areaCalculator,
+      configuration: {
+        displayUnit: "m",
+        dimensions: {
+          first: {
+            key: "rollWidth",
+            label: "Szerokość rolki",
+            allowedValuesCm: [200, 300, 400],
+          },
+          second: {
+            key: "length",
+            label: "Długość",
+          },
+          noteOrder: ["rollWidth", "length"],
+        },
+        pricing: {
+          areaUnit: "m2",
+          coefficient: 1,
+        },
+        purchasableQuantity: {
+          rounding: { mode: "ceil", precision: 0 },
+        },
+        constraints: {
+          minFirstCm: 200,
+          minSecondCm: 1,
+        },
+      },
+    };
+
+    const calculation = calculateForCalculator({
+      pieces: [{ quantity: 1, rollWidth: 4, length: 2.2 }],
+    }, calculator);
+
+    assert.equal(calculation.result.totalArea, 8.8);
+    assert.equal(calculation.result.purchasableItems, 9);
+    assert.equal(calculation.marketplaceNote, "1x 4 m x 2,2 m");
+
+    assert.throws(
+      () => validateBuyerInput({
+        pieces: [{ quantity: 1, rollWidth: 2.5, length: 5 }],
+      }, calculator),
+      /szerokość rolki musi mieć jedną z wartości: 2 m, 3 m, 4 m/,
     );
   });
 });

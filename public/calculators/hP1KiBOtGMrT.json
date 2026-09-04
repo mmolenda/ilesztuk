@@ -5,7 +5,7 @@
   "calculatorName": "Siatka na balkon dla kota",
   "plugin": "rectangular_pieces",
   "configuration": {
-    "displayUnit": "cm",
+    "displayUnit": "m",
     "dimensions": {
       "first": {
         "key": "rollWidth",
@@ -24,7 +24,7 @@
     },
     "constraints": {
       "minFirstCm": 200,
-      "minSecondCm": 0.01,
+      "minSecondCm": 1,
       "enforceSecondNotGreaterThanFirst": false
     }
   }

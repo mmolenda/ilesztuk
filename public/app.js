@@ -106,10 +106,10 @@ function renderFurnitureCalculatorForm(calculator) {
   const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
   const rules = [
     ...rectangularRuleChips(config),
-    config.edges?.minFinishEdgeCm ? `${config.edges.label ?? "Wykończenie"}: bok min. ${formatMetric(config.edges.minFinishEdgeCm)} cm` : null,
-    config.constraints?.maxPerimeterCm ? `Max suma boków ${formatMetric(config.constraints.maxPerimeterCm)} cm` : null,
-    config.constraints?.maxFirstCm ? `Max ${firstDimension.label.toLowerCase()} ${formatMetric(config.constraints.maxFirstCm)} cm` : null,
-    config.constraints?.maxSecondCm ? `Max ${secondDimension.label.toLowerCase()} ${formatMetric(config.constraints.maxSecondCm)} cm` : null,
+    config.edges?.minFinishEdgeCm ? `${config.edges.label ?? "Wykończenie"}: bok min. ${formatLength(config.edges.minFinishEdgeCm, config)}` : null,
+    config.constraints?.maxPerimeterCm ? `Max suma boków ${formatLength(config.constraints.maxPerimeterCm, config)}` : null,
+    config.constraints?.maxFirstCm ? `Max ${firstDimension.label.toLowerCase()} ${formatLength(config.constraints.maxFirstCm, config)}` : null,
+    config.constraints?.maxSecondCm ? `Max ${secondDimension.label.toLowerCase()} ${formatLength(config.constraints.maxSecondCm, config)}` : null,
   ].filter(Boolean);
 
   return `
@@ -312,20 +312,22 @@ function renderEdgePicker(index, config) {
 
 function renderDimensionInput(dimension, index, config) {
   const name = `${dimension.key}_${index}`;
-  const label = `${dimension.label} cm`;
+  const unit = config.displayUnit ?? "cm";
+  const label = `${dimension.label} ${unit}`;
   if (Array.isArray(dimension.allowedValuesCm) && dimension.allowedValuesCm.length > 0) {
     return `<select name="${escapeHtml(name)}" required aria-label="${escapeHtml(label)}">
       <option value="">${escapeHtml(label)}</option>
       ${dimension.allowedValuesCm.map((value) => {
-        const normalized = String(Number(value));
-        return `<option value="${escapeHtml(normalized)}">${escapeHtml(formatMetric(value))} cm</option>`;
+        const displayValue = fromCentimeters(value, unit);
+        const normalized = String(Number(displayValue));
+        return `<option value="${escapeHtml(normalized)}">${escapeHtml(formatMetric(displayValue))} ${escapeHtml(unit)}</option>`;
       }).join("")}
     </select>`;
   }
 
-  const min = formatMetric(minimumForDimension(dimension.key, config) ?? 0.01).replace(",", ".");
+  const min = formatMetric(fromCentimeters(minimumForDimension(dimension.key, config) ?? 0.01, unit)).replace(",", ".");
   const max = maximumForDimension(dimension.key, config);
-  const maxAttribute = max ? ` max="${formatMetric(max).replace(",", ".")}"` : "";
+  const maxAttribute = max ? ` max="${formatMetric(fromCentimeters(max, unit)).replace(",", ".")}"` : "";
   return `<input name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="0.01" placeholder="${escapeHtml(label)}" required>`;
 }
 
@@ -379,6 +381,15 @@ function roundingLabel(rounding) {
 
 function areaUnitLabel(areaUnit) {
   return areaUnit === "m2" ? "m²" : "cm²";
+}
+
+function fromCentimeters(valueCm, unit) {
+  return valueCm / (unit === "m" ? 100 : 1);
+}
+
+function formatLength(valueCm, config) {
+  const unit = config.displayUnit ?? "cm";
+  return `${formatMetric(fromCentimeters(valueCm, unit))} ${unit}`;
 }
 
 function renderNotFound() {

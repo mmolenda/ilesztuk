@@ -1,7 +1,6 @@
 import {
   aggregatePieces,
   formatMetric,
-  formatNumber,
   parsePositiveInteger,
   parsePositiveNumber,
   requirePieces,
@@ -12,6 +11,7 @@ import {
 export const RECTANGULAR_PIECES_PLUGIN = "rectangular_pieces";
 
 export const DEFAULT_RECTANGULAR_CONFIG = Object.freeze({
+  // displayUnit options: cm, m
   displayUnit: "cm",
   dimensions: {
     first: { key: "width", label: "Szerokość", allowedValuesCm: null },
@@ -139,16 +139,16 @@ function validateInput(input, calculator, { ValidationError }) {
     pieces: pieces.map((piece, index) => {
       const rowLabel = `Wiersz ${index + 1}`;
       const quantity = parsePositiveInteger(piece.quantity, `Ilość w wierszu ${index + 1}`, ValidationError);
-      const firstValue = parsePositiveNumber(
+      const firstValue = toCentimeters(parsePositiveNumber(
         piece[firstDimension.key],
         `${firstDimension.label} w wierszu ${index + 1}`,
         ValidationError,
-      );
-      const secondValue = parsePositiveNumber(
+      ), config.displayUnit);
+      const secondValue = toCentimeters(parsePositiveNumber(
         piece[secondDimension.key],
         `${secondDimension.label} w wierszu ${index + 1}`,
         ValidationError,
-      );
+      ), config.displayUnit);
       const dimensions = {
         [firstDimension.key]: firstValue,
         [secondDimension.key]: secondValue,
@@ -193,6 +193,7 @@ function calculate(validatedInput, calculator) {
     pieces: aggregatePieces(validatedInput.pieces, (piece) => pieceKey(piece, config)),
     rows: rowDetails,
     areaUnit: config.pricing.areaUnit,
+    displayUnit: config.displayUnit,
     dimensionLabels: {
       first: config.dimensions.first.label,
       second: config.dimensions.second.label,
@@ -261,10 +262,10 @@ function validateConstraints({
   config,
   ValidationError,
 }) {
-  validateDimensionLimits(rowLabel, firstDimension, firstValue, config.constraints.minFirstCm, config.constraints.maxFirstCm, ValidationError);
-  validateDimensionLimits(rowLabel, secondDimension, secondValue, config.constraints.minSecondCm, config.constraints.maxSecondCm, ValidationError);
-  validateAllowedDimensionValue(rowLabel, firstDimension, firstValue, ValidationError);
-  validateAllowedDimensionValue(rowLabel, secondDimension, secondValue, ValidationError);
+  validateDimensionLimits(rowLabel, firstDimension, firstValue, config.constraints.minFirstCm, config.constraints.maxFirstCm, config, ValidationError);
+  validateDimensionLimits(rowLabel, secondDimension, secondValue, config.constraints.minSecondCm, config.constraints.maxSecondCm, config, ValidationError);
+  validateAllowedDimensionValue(rowLabel, firstDimension, firstValue, config, ValidationError);
+  validateAllowedDimensionValue(rowLabel, secondDimension, secondValue, config, ValidationError);
 
   if (config.constraints.enforceSecondNotGreaterThanFirst && secondValue > firstValue) {
     throw new ValidationError(`${rowLabel}: ${dimensionLabel(secondKey, config).toLowerCase()} nie może być większa niż ${dimensionLabel(firstKey, config).toLowerCase()}.`);
@@ -272,7 +273,7 @@ function validateConstraints({
 
   const perimeter = 2 * (firstValue + secondValue);
   if (config.constraints.maxPerimeterCm && perimeter > config.constraints.maxPerimeterCm) {
-    throw new ValidationError(`${rowLabel}: suma boków jednej formatki nie może przekroczyć ${config.constraints.maxPerimeterCm} cm.`);
+    throw new ValidationError(`${rowLabel}: suma boków jednej formatki nie może przekroczyć ${formatLength(config.constraints.maxPerimeterCm, config)}.`);
   }
   if (config.decor.required && !decor) {
     throw new ValidationError(`${rowLabel}: podaj wybrany dekor.`);
@@ -283,21 +284,21 @@ function validateConstraints({
       ? dimensionValue("length", { [firstKey]: firstValue, [secondKey]: secondValue }, config)
       : dimensionValue("width", { [firstKey]: firstValue, [secondKey]: secondValue }, config);
     if (config.edges.minFinishEdgeCm && edgeLength < config.edges.minFinishEdgeCm) {
-      throw new ValidationError(`${rowLabel}: wykańczany bok musi mieć minimum ${config.edges.minFinishEdgeCm} cm.`);
+      throw new ValidationError(`${rowLabel}: wykańczany bok musi mieć minimum ${formatLength(config.edges.minFinishEdgeCm, config)}.`);
     }
   }
 }
 
-function validateDimensionLimits(rowLabel, dimension, value, minimum, maximum, ValidationError) {
+function validateDimensionLimits(rowLabel, dimension, value, minimum, maximum, config, ValidationError) {
   if (minimum && value < minimum) {
-    throw new ValidationError(`${rowLabel}: ${dimension.label.toLowerCase()} musi mieć minimum ${minimum} cm.`);
+    throw new ValidationError(`${rowLabel}: ${dimension.label.toLowerCase()} musi mieć minimum ${formatLength(minimum, config)}.`);
   }
   if (maximum && value > maximum) {
-    throw new ValidationError(`${rowLabel}: ${dimension.label.toLowerCase()} nie może przekroczyć ${maximum} cm.`);
+    throw new ValidationError(`${rowLabel}: ${dimension.label.toLowerCase()} nie może przekroczyć ${formatLength(maximum, config)}.`);
   }
 }
 
-function validateAllowedDimensionValue(rowLabel, dimension, value, ValidationError) {
+function validateAllowedDimensionValue(rowLabel, dimension, value, config, ValidationError) {
   if (!Array.isArray(dimension.allowedValuesCm) || dimension.allowedValuesCm.length === 0) {
     return;
   }
@@ -305,7 +306,7 @@ function validateAllowedDimensionValue(rowLabel, dimension, value, ValidationErr
   const allowed = dimension.allowedValuesCm.some((allowedValue) => Math.abs(Number(allowedValue) - value) < 0.000001);
   if (!allowed) {
     throw new ValidationError(
-      `${rowLabel}: ${dimension.label.toLowerCase()} musi mieć jedną z wartości: ${dimension.allowedValuesCm.map(formatMetric).join(", ")} cm.`,
+      `${rowLabel}: ${dimension.label.toLowerCase()} musi mieć jedną z wartości: ${dimension.allowedValuesCm.map((allowedValue) => formatLength(allowedValue, config)).join(", ")}.`,
     );
   }
 }
@@ -332,7 +333,7 @@ function formatPiece(piece, noteOrder, config) {
   const [firstKey, secondKey] = noteOrder;
   const edgeText = config.edges.enabled ? formatEdges(piece.edges) : "";
   const decorText = config.decor.enabled && piece.decor ? `, dekor: ${piece.decor}` : "";
-  return `${piece.quantity}x ${formatNumber(piece[firstKey])} ${piece.unit} x ${formatNumber(piece[secondKey])} ${piece.unit}${edgeText}${decorText}`;
+  return `${piece.quantity}x ${formatLength(piece[firstKey], config)} x ${formatLength(piece[secondKey], config)}${edgeText}${decorText}`;
 }
 
 function sellerMetrics(result) {
@@ -341,11 +342,11 @@ function sellerMetrics(result) {
     result.totalAreaForPricing !== result.totalArea
       ? ["Powierzchnia po zaokrągleniach", `${formatMetric(result.totalAreaForPricing)} ${areaUnitLabel(result.areaUnit)}`]
       : null,
-    result.totalCoatedEdgeCm ? ["Łączna długość oklejenia", `${formatMetric(result.totalCoatedEdgeCm)} cm`] : null,
+    result.totalCoatedEdgeCm ? ["Łączna długość oklejenia", formatLength(result.totalCoatedEdgeCm, { displayUnit: result.displayUnit })] : null,
     pricingMetric(result.pricing),
-    result.limits.maxPerimeterCm ? ["Limit sumy boków", `${formatMetric(result.limits.maxPerimeterCm)} cm`] : null,
-    result.limits.maxFirstCm ? [`Maks. ${result.dimensionLabels?.first ?? "pierwszy wymiar"}`, `${formatMetric(result.limits.maxFirstCm)} cm`] : null,
-    result.limits.maxSecondCm ? [`Maks. ${result.dimensionLabels?.second ?? "drugi wymiar"}`, `${formatMetric(result.limits.maxSecondCm)} cm`] : null,
+    result.limits.maxPerimeterCm ? ["Limit sumy boków", formatLength(result.limits.maxPerimeterCm, { displayUnit: result.displayUnit })] : null,
+    result.limits.maxFirstCm ? [`Maks. ${result.dimensionLabels?.first ?? "pierwszy wymiar"}`, formatLength(result.limits.maxFirstCm, { displayUnit: result.displayUnit })] : null,
+    result.limits.maxSecondCm ? [`Maks. ${result.dimensionLabels?.second ?? "drugi wymiar"}`, formatLength(result.limits.maxSecondCm, { displayUnit: result.displayUnit })] : null,
     ["Wynik", `${result.purchasableItems} sztuk`],
   ].filter(Boolean);
 }
@@ -360,6 +361,23 @@ function areaInConfiguredUnit(firstCm, secondCm, quantity, areaUnit) {
     return areaCm2 / 10_000;
   }
   return areaCm2;
+}
+
+function toCentimeters(value, unit) {
+  return value * unitToCentimeterFactor(unit);
+}
+
+function fromCentimeters(valueCm, unit) {
+  return valueCm / unitToCentimeterFactor(unit);
+}
+
+function unitToCentimeterFactor(unit) {
+  return unit === "m" ? 100 : 1;
+}
+
+function formatLength(valueCm, config = DEFAULT_RECTANGULAR_CONFIG) {
+  const unit = config.displayUnit ?? "cm";
+  return `${formatMetric(fromCentimeters(valueCm, unit))} ${unit}`;
 }
 
 function applyOptionalRounding(value, rounding) {

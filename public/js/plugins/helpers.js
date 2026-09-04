@@ -53,10 +53,6 @@ export function roundDecimal(value, digits) {
   return Math.round(value * factor) / factor;
 }
 
-export function formatNumber(value) {
-  return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)));
-}
-
 export function formatMetric(value) {
   return new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 4 }).format(value);
 }
