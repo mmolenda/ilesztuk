@@ -83,7 +83,7 @@ function renderLanding() {
 
       <section class="landing-contact" id="kontakt" aria-labelledby="contact-title">
         <h2 id="contact-title">Sprzedajesz produkt, dla którego klienci muszą coś obliczać?</h2>
-        <p>Pokaż mi swoją ofertę. Przygotuję przykładowy kalkulator dopasowany do Twojego sposobu sprzedaży.</p>
+        <p>Pokaż nam swoją ofertę. Przygotujemy przykładowy kalkulator dopasowany do Twojego sposobu sprzedaży.</p>
         <a class="button-link" href="mailto:${CONTACT_EMAIL}">Skontaktuj się</a>
       </section>
     </div>
