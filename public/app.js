@@ -4,6 +4,9 @@ import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1750";
 import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1750";
 
 const app = document.querySelector("#app");
+const siteFooter = document.querySelector("#site-footer");
+const DEMO_CALCULATOR_URL = "/k/8ukq6mwKY5ft";
+const CONTACT_EMAIL = "kontakt@ilesztuk.pl";
 
 main().catch((error) => {
   console.error(error);
@@ -36,13 +39,56 @@ function parseRoute(pathname) {
 }
 
 function renderLanding() {
-  document.title = "IleSztuk";
+  document.title = "IleSztuk – kalkulatory zamówień dla e-commerce";
   app.innerHTML = `
-    <section class="landing">
-      <h1>IleSztuk</h1>
-      <p>Prosty kalkulator ilości sztuk do zamówień marketplace.</p>
-    </section>
+    <div class="landing">
+      <section class="landing-hero" aria-labelledby="landing-title">
+        <p class="eyebrow">Kalkulatory zamówień dla e-commerce</p>
+        <h1 id="landing-title">Klient wpisuje wymiary.<br>IleSztuk mówi mu, ile sztuk kupić.</h1>
+        <p class="landing-lead">Proste kalkulatory zamówień dla produktów na wymiar.<br>Mniej liczenia, mniej pomyłek, prostsze zakupy.</p>
+        <div class="landing-actions">
+          <a class="button-link" href="${DEMO_CALCULATOR_URL}">Zobacz przykładowy kalkulator</a>
+          <a class="text-link" href="#kontakt">Masz podobną ofertę? Skontaktuj się</a>
+        </div>
+      </section>
+
+      <figure class="landing-screenshot">
+        <img src="/images/formatkahq-demo.png" alt="Przykładowy kalkulator FormatkaHQ z uzupełnionymi wymiarami, wykończeniem mat, zaznaczonym oklejeniem i wynikiem Kup 9 sztuk.">
+      </figure>
+
+      <section class="landing-section landing-copy" aria-labelledby="problem-title">
+        <h2 id="problem-title">Zamiast instrukcji „pomnóż, podziel i zaokrąglij”</h2>
+        <p>Jeśli sprzedajesz formatki, płyty, listwy, siatki, materiały lub inne produkty wymagające przeliczenia na sztuki, klient nie musi wykonywać obliczeń samodzielnie.</p>
+        <p>IleSztuk dostosowuje kalkulator do Twojego sposobu sprzedaży.</p>
+      </section>
+
+      <section class="landing-section" aria-labelledby="how-title">
+        <h2 id="how-title">Jak to działa?</h2>
+        <div class="steps-grid">
+          <article class="step-card"><p class="step-number">1</p><h3>Klient podaje wymiary</h3><p>Wpisuje potrzebne wymiary, ilość i opcje produktu.</p></article>
+          <article class="step-card"><p class="step-number">2</p><h3>Kalkulator przelicza zamówienie</h3><p>Obliczenia są wykonywane według zasad określonych dla konkretnej oferty.</p></article>
+          <article class="step-card"><p class="step-number">3</p><h3>Klient wie, ile sztuk kupić</h3><p>Otrzymuje liczbę sztuk do zamówienia oraz gotowe szczegóły do przekazania sprzedawcy.</p></article>
+        </div>
+      </section>
+
+      <section class="landing-section" aria-labelledby="benefits-title">
+        <h2 id="benefits-title">Prościej dla klienta. Mniej problemów dla sprzedawcy.</h2>
+        <div class="benefits-grid">
+          <article class="benefit-item"><h3>Mniej błędów w zamówieniach</h3><p>Klient nie musi rozumieć wzoru ani wykonywać obliczeń ręcznie.</p></article>
+          <article class="benefit-item"><h3>Mniej pytań przed zakupem</h3><p>Zasady zamówienia są przełożone na prosty formularz.</p></article>
+          <article class="benefit-item"><h3>Kalkulator dopasowany do oferty</h3><p>Pola, warianty i sposób obliczania mogą odpowiadać konkretnemu produktowi.</p></article>
+          <article class="benefit-item"><h3>Gotowe szczegóły zamówienia</h3><p>Klient może skopiować ustandaryzowany tekst z wymiarami i konfiguracją.</p></article>
+        </div>
+      </section>
+
+      <section class="landing-contact" id="kontakt" aria-labelledby="contact-title">
+        <h2 id="contact-title">Sprzedajesz produkt, dla którego klienci muszą coś obliczać?</h2>
+        <p>Pokaż mi swoją ofertę. Przygotuję przykładowy kalkulator dopasowany do Twojego sposobu sprzedaży.</p>
+        <a class="button-link" href="mailto:${CONTACT_EMAIL}">Skontaktuj się</a>
+      </section>
+    </div>
   `;
+  renderSiteFooter();
 }
 
 function renderCalculatorPage(calculator, error = "") {
@@ -59,6 +105,7 @@ function renderCalculatorPage(calculator, error = "") {
       ${usesGraphicalRectangularCalculatorForm(calculator) ? renderFurnitureCalculatorForm(calculator) : renderAreaCalculatorForm(calculator)}
     </section>
   `;
+  renderCalculatorFooter();
   bindCalculatorForm(calculator);
   bindRows(() => document.querySelector("[data-calculation-form]")?.updateCalculation?.());
 }
@@ -955,11 +1002,35 @@ function formatLength(valueCm, config) {
 function renderNotFound() {
   document.title = "Nie znaleziono - IleSztuk";
   app.innerHTML = `<section class="panel"><h1>Nie znaleziono strony</h1></section>`;
+  renderSiteFooter();
 }
 
 function renderError() {
   document.title = "Błąd - IleSztuk";
   app.innerHTML = `<section class="panel"><h1>Nie udało się obsłużyć żądania</h1></section>`;
+  renderSiteFooter();
+}
+
+function renderSiteFooter() {
+  if (!siteFooter) {
+    return;
+  }
+  siteFooter.className = "site-footer";
+  siteFooter.innerHTML = `
+    <div class="footer-inner">
+      <div class="footer-brand"><strong>IleSztuk</strong><p>Kalkulatory zamówień dla e-commerce.</p></div>
+      <nav class="footer-nav" aria-label="Stopka"><a href="${DEMO_CALCULATOR_URL}">Demo</a><a href="/#kontakt">Kontakt</a></nav>
+      <div class="footer-business"><span>Marcin Molenda</span><span>NIP 5252298622</span><span>© 2026 IleSztuk</span></div>
+    </div>
+  `;
+}
+
+function renderCalculatorFooter() {
+  if (!siteFooter) {
+    return;
+  }
+  siteFooter.className = "site-footer calculator-footer";
+  siteFooter.innerHTML = `<div class="footer-inner"><p>Kalkulator obsługiwany przez <a href="/">IleSztuk</a></p><a href="mailto:${CONTACT_EMAIL}">Kontakt</a></div>`;
 }
 
 function formatMetric(value) {

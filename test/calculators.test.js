@@ -103,6 +103,17 @@ describe("static calculators", () => {
     });
     assert.equal(calculator.customerUrl, "https://example.com/seller");
 
+    const internalCalculator = normalizeCalculator({
+      customerId: "seller-a",
+      customerName: "Seller A",
+      customerUrl: "/",
+      calculatorId: "AaBbCc123456",
+      calculatorName: "Calculator A",
+      plugin: "rectangular_pieces",
+      configuration: {},
+    });
+    assert.equal(internalCalculator.customerUrl, "/");
+
     assert.throws(
       () => normalizeCalculator({
         customerId: "seller-a",

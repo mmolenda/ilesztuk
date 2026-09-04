@@ -79,9 +79,30 @@ a {
   text-decoration: none;
 }
 
+a:focus-visible {
+  border-radius: 2px;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  outline: none;
+}
+
 .brand {
   color: var(--color-text);
   font-size: 1.25rem;
+}
+
+.site-nav {
+  align-items: center;
+  display: flex;
+  gap: 20px;
+}
+
+.site-nav a {
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.site-nav a:hover {
+  color: var(--color-accent);
 }
 
 main {
@@ -227,21 +248,136 @@ form {
 }
 
 .landing {
-  align-content: center;
-  min-height: 52vh;
+  display: grid;
+  gap: clamp(56px, 9vw, 112px);
+  padding: clamp(20px, 3vw, 36px) 0 clamp(24px, 4vw, 48px);
+}
+
+.landing-hero {
+  display: grid;
+  gap: 18px;
+  max-width: 780px;
 }
 
 .landing h1 {
-  font-size: clamp(3rem, 10vw, 6.5rem);
-  margin-bottom: 16px;
+  font-size: clamp(2.35rem, 5vw, 4.4rem);
+  letter-spacing: -0.035em;
+  line-height: 1.04;
 }
 
-.landing p {
+.landing-lead {
   color: var(--color-text-muted);
-  font-size: 1.2rem;
-  line-height: 1.5;
+  font-size: clamp(1.05rem, 2vw, 1.2rem);
+  line-height: 1.55;
   margin: 0;
-  max-width: 620px;
+}
+
+.landing-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+  margin-top: 4px;
+}
+
+.text-link {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.text-link:hover {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
+}
+
+.landing-screenshot {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px var(--color-shadow);
+  margin: 0;
+  overflow: hidden;
+}
+
+.landing-screenshot img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.landing-section {
+  display: grid;
+  gap: 24px;
+}
+
+.landing-section h2,
+.landing-contact h2 {
+  font-size: clamp(1.55rem, 3vw, 2.15rem);
+  letter-spacing: -0.02em;
+  line-height: 1.16;
+}
+
+.landing-copy {
+  gap: 14px;
+  max-width: 780px;
+}
+
+.landing-copy p,
+.step-card p,
+.benefit-item p,
+.landing-contact p {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.steps-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.step-card,
+.benefit-item {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.step-number {
+  color: var(--color-accent);
+  font-size: 0.86rem;
+  font-weight: 900;
+  margin: 0 0 12px;
+}
+
+.step-card h3,
+.benefit-item h3 {
+  font-size: 1rem;
+  margin: 0 0 8px;
+}
+
+.benefits-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.landing-contact {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  display: grid;
+  gap: 16px;
+  padding: clamp(24px, 5vw, 40px);
+}
+
+.landing-contact .button-link {
+  margin-top: 4px;
 }
 
 .button-link {
@@ -947,6 +1083,71 @@ dd {
   margin: 0;
 }
 
+.site-footer {
+  border-top: 1px solid var(--color-border);
+  margin-top: clamp(32px, 5vw, 64px);
+}
+
+.footer-inner {
+  align-items: flex-start;
+  display: flex;
+  gap: 20px 36px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 28px 16px;
+}
+
+.footer-brand {
+  display: grid;
+  gap: 5px;
+}
+
+.footer-brand strong {
+  color: var(--color-text);
+}
+
+.footer-brand p,
+.footer-business,
+.calculator-footer p {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+.footer-nav {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-nav a,
+.calculator-footer a {
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+}
+
+.footer-nav a:hover,
+.calculator-footer a:hover {
+  color: var(--color-accent);
+}
+
+.footer-business {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  justify-content: flex-end;
+}
+
+.calculator-footer {
+  margin-top: 24px;
+}
+
+.calculator-footer .footer-inner {
+  align-items: center;
+  padding-bottom: 20px;
+  padding-top: 20px;
+}
+
 @media (max-width: 847px) {
   header {
     align-items: flex-start;
@@ -960,6 +1161,25 @@ dd {
 
   .calculator-shell {
     border-radius: 12px;
+  }
+
+  .landing {
+    gap: 48px;
+    padding-top: 8px;
+  }
+
+  .steps-grid,
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .footer-business {
+    justify-content: flex-start;
   }
 
   .rule-strip.subtle {

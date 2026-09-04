@@ -51,6 +51,9 @@ function normalizeCustomerUrl(value, source) {
   if (typeof value !== "string") {
     throw new Error(`${source}: customerUrl must be a string`);
   }
+  if (value === "/") {
+    return value;
+  }
 
   let url;
   try {
