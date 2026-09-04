@@ -169,6 +169,13 @@ describe("validation and calculation", () => {
       }, calculator),
       /szerokość nie może przekroczyć 120 cm/,
     );
+
+    assert.throws(
+      () => validateBuyerInput({
+        pieces: [{ quantity: 10_001, length: 100, width: 8, edges: [] }],
+      }, furnitureCalculator),
+      /Ilość w wierszu 1 nie może przekroczyć 10\s000/,
+    );
   });
 
   it("uses first and second minimums as hard input limits", () => {

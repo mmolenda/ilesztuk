@@ -55,6 +55,8 @@ export const DEFAULT_RECTANGULAR_CONFIG = Object.freeze({
   },
 });
 
+export const MAX_PIECE_QUANTITY = 10_000;
+
 export const rectangularPiecesPlugin = Object.freeze({
   label: "Elementy prostokątne",
   validateInput,
@@ -133,7 +135,7 @@ function validateInput(input, calculator, { ValidationError }) {
   return {
     pieces: pieces.map((piece, index) => {
       const rowLabel = `Wiersz ${index + 1}`;
-      const quantity = parsePositiveInteger(piece.quantity, `Ilość w wierszu ${index + 1}`, ValidationError);
+      const quantity = parseQuantity(piece.quantity, `Ilość w wierszu ${index + 1}`, ValidationError);
       const firstValue = toCentimeters(parsePositiveNumber(
         piece[firstDimension.key],
         `${firstDimension.label} w wierszu ${index + 1}`,
@@ -175,6 +177,14 @@ function validateInput(input, calculator, { ValidationError }) {
     }),
     unit: config.displayUnit,
   };
+}
+
+function parseQuantity(value, label, ValidationError) {
+  const quantity = parsePositiveInteger(value, label, ValidationError);
+  if (quantity > MAX_PIECE_QUANTITY) {
+    throw new ValidationError(`${label} nie może przekroczyć ${MAX_PIECE_QUANTITY.toLocaleString("pl-PL")}.`);
+  }
+  return quantity;
 }
 
 function calculate(validatedInput, calculator) {

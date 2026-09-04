@@ -1,6 +1,7 @@
 import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js";
 import { isValidCalculatorId, loadCalculator } from "./js/calculators.js";
 import { formatPiecesQuantity } from "./js/formatting.js";
+import { MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js";
 
 const app = document.querySelector("#app");
 
@@ -114,13 +115,12 @@ function renderAreaRow(index, calculator) {
 
   return `
     <div class="piece-row" data-piece-row data-row-index="${index}">
-      <div class="row-title"><span data-row-number>Element 1</span></div>
+      ${renderItemHeading()}
       <div class="row-fields">
         ${renderQuantityField(index)}
         ${renderDimensionField(first, index, config)}
         ${renderDimensionField(second, index, config)}
       </div>
-      <button type="button" class="remove-row-button" data-remove-row aria-label="Usuń element">Usuń</button>
     </div>
   `;
 }
@@ -162,7 +162,7 @@ function renderFurnitureRow(index, calculator) {
 
   return `
     <div class="furniture-row ${config.edges?.enabled ? "" : "no-edge-picker"}" data-piece-row data-row-index="${index}">
-      <div class="row-title"><span data-row-number>Element 1</span></div>
+      ${renderItemHeading()}
       <div class="furniture-fields">
         ${renderQuantityField(index)}
         ${firstInput}
@@ -170,7 +170,17 @@ function renderFurnitureRow(index, calculator) {
         ${customFields}
       </div>
       ${renderEdgePicker(index, config)}
-      <button type="button" class="remove-row-button" data-remove-row aria-label="Usuń element">Usuń</button>
+    </div>
+  `;
+}
+
+function renderItemHeading() {
+  return `
+    <div class="row-title">
+      <span data-row-number>Element 1</span>
+      <button type="button" class="remove-row-button" data-remove-row aria-label="Usuń element" title="Usuń element">
+        <span class="trash-icon" aria-hidden="true"></span>
+      </button>
     </div>
   `;
 }
@@ -215,8 +225,9 @@ function bindRows(onRowsChanged = () => {}) {
   });
 
   rowsContainer.addEventListener("click", (event) => {
-    if (event.target.matches("[data-remove-row]")) {
-      event.target.closest("[data-piece-row]").remove();
+    const removeButton = event.target.closest("[data-remove-row]");
+    if (removeButton) {
+      removeButton.closest("[data-piece-row]").remove();
       updateRowControls();
       onRowsChanged();
     }
@@ -474,6 +485,10 @@ function validateQuantity(row, index, rowLabel, errors) {
     addValidationError(errors, name, `${rowLabel}: ilość musi być liczbą całkowitą większą od 0.`);
     return null;
   }
+  if (number > MAX_PIECE_QUANTITY) {
+    addValidationError(errors, name, `${rowLabel}: liczba sztuk nie może przekroczyć ${MAX_PIECE_QUANTITY.toLocaleString("pl-PL")}.`);
+    return null;
+  }
   return number;
 }
 
@@ -647,7 +662,7 @@ function renderQuantityField(index) {
     className: "field-quantity",
     label: "Liczba szt.",
     guidance: "Liczba sztuk tego elementu",
-    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="1" step="1" value="1" inputmode="numeric" required>`,
+    control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="1" max="${MAX_PIECE_QUANTITY}" step="1" value="1" inputmode="numeric" required>`,
   });
 }
 
