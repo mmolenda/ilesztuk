@@ -1,8 +1,8 @@
 {
   "customerId": "panel-demo",
   "customerName": "Panel Demo",
-  "offerId": "panels-x20-rounded-offer",
-  "offerName": "Panele na wymiar - przelicznik x20",
+  "calculatorId": "gyLKW5IAn5Es",
+  "calculatorName": "Panele na wymiar - przelicznik x20",
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",

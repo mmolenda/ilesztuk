@@ -16,19 +16,28 @@ const contentTypes = {
 };
 
 http.createServer(async (request, response) => {
+  let pathname = "/";
   try {
     const url = new URL(request.url, `http://${request.headers.host}`);
-    const filePath = routeToFile(url.pathname);
+    pathname = url.pathname;
+    if (pathname === "/calculators" || pathname === "/calculators/") {
+      return sendNotFound(response);
+    }
+
+    const filePath = routeToFile(pathname);
     const content = await readFile(filePath);
     const extension = path.extname(filePath);
     response.writeHead(200, { "content-type": contentTypes[extension] ?? "application/octet-stream" });
     response.end(content);
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if (error.code === "ENOENT" && !path.extname(pathname) && !pathname.startsWith("/calculators/")) {
       const content = await readFile(path.join(publicDir, "index.html"));
       response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
       response.end(content);
       return;
+    }
+    if (error.code === "ENOENT" || error.code === "EISDIR") {
+      return sendNotFound(response);
     }
     console.error(error);
     response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
@@ -43,8 +52,7 @@ function routeToFile(pathname) {
     return path.join(publicDir, "index.html");
   }
 
-  const decodedPath = decodeURIComponent(pathname);
-  const filePath = path.normalize(path.join(publicDir, decodedPath));
+  const filePath = path.normalize(path.join(publicDir, pathname));
   if (!filePath.startsWith(publicDir)) {
     return path.join(publicDir, "index.html");
   }
@@ -53,4 +61,9 @@ function routeToFile(pathname) {
     return filePath;
   }
   return path.join(publicDir, "index.html");
+}
+
+function sendNotFound(response) {
+  response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+  response.end("Not found");
 }

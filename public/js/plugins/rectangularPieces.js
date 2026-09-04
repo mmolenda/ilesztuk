@@ -134,9 +134,9 @@ export function rectangularConfig(config = {}) {
   };
 }
 
-function validateInput(input, offer, { ValidationError }) {
+function validateInput(input, calculator, { ValidationError }) {
   const pieces = requirePieces(input, ValidationError);
-  const config = rectangularConfig(offer.configuration);
+  const config = rectangularConfig(calculator.configuration);
   const firstDimension = config.dimensions.first;
   const secondDimension = config.dimensions.second;
 
@@ -187,8 +187,8 @@ function validateInput(input, offer, { ValidationError }) {
   };
 }
 
-function calculate(validatedInput, offer) {
-  const config = rectangularConfig(offer.configuration);
+function calculate(validatedInput, calculator) {
+  const config = rectangularConfig(calculator.configuration);
   const rowDetails = validatedInput.pieces.map((piece) => calculateRow(piece, config));
   const totalAreaBase = sum(rowDetails.map((row) => row.areaForTotal));
   const totalAreaForPricing = applyOptionalRounding(totalAreaBase, config.totalArea.rounding);
@@ -316,21 +316,21 @@ function validateAllowedDimensionValue(rowLabel, dimension, value, ValidationErr
   }
 }
 
-function createMarketplaceNote(result, offer) {
+function createMarketplaceNote(result, calculator) {
   return [
-    ...result.pieces.map((piece) => formatPieceForOffer(piece, offer)),
+    ...result.pieces.map((piece) => formatPieceForCalculator(piece, calculator)),
   ].join("\n");
 }
 
-function formatPieceLine(piece, offer = null) {
-  if (offer) {
-    return formatPieceForOffer(piece, offer);
+function formatPieceLine(piece, calculator = null) {
+  if (calculator) {
+    return formatPieceForCalculator(piece, calculator);
   }
   return formatPiece(piece, DEFAULT_RECTANGULAR_CONFIG.dimensions.noteOrder, { edges: { enabled: false }, decor: { enabled: false } });
 }
 
-function formatPieceForOffer(piece, offer) {
-  const config = rectangularConfig(offer.configuration);
+function formatPieceForCalculator(piece, calculator) {
+  const config = rectangularConfig(calculator.configuration);
   return formatPiece(piece, config.dimensions.noteOrder, config);
 }
 

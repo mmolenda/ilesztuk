@@ -1,28 +1,65 @@
-# IleSztuk Offer Calculators
+# IleSztuk Calculators
 
 ## Summary
 
-IleSztuk is a static browser app for marketplace offer calculators. Offers are stored as JSON files served with the static site. Calculations are performed in the browser and are not persisted.
+IleSztuk is a static browser app for calculators used with marketplace listings. Calculator pages are public for anyone who knows the URL, but the app does not publish a calculator catalog or expose predictable calculator URLs. Calculations are performed in the browser and are not persisted.
 
-The application has two main public URL shapes:
+The public calculator URL shape is:
 
-- `/o/<offer-id>` displays one calculator for a specific offer.
-- `/c/<customer-id>` lists all offers belonging to one customer.
+```text
+/k/<calculator-id>
+```
 
 The main page is a simple IleSztuk landing page.
 
-## Offer Files
+## Calculator Discoverability
 
-Each offer is a JSON file under `public/offers/`.
+Calculator IDs are random, non-sequential, 12-character base62 strings.
 
-Browsers cannot reliably list static directories, so `public/offers/index.json` is the offer manifest. It contains each offer ID, customer ID, display names, and JSON file name.
+Example:
 
-Required fields:
+```text
+7Kp9xQm2VrL4
+```
 
-- `customerId`: stable customer identifier used in `/c/<customer-id>`.
+Calculator IDs are not derived from customer names, calculator names, counters, timestamps, or other predictable inputs.
+
+Knowing one calculator URL should not make it practical to discover other calculator URLs.
+
+## Calculator Files
+
+Each calculator is a JSON file under `public/calculators/`. The filename is the calculator ID:
+
+```text
+public/calculators/7Kp9xQm2VrL4.json
+```
+
+The calculator route:
+
+```text
+/k/7Kp9xQm2VrL4
+```
+
+loads:
+
+```text
+/calculators/7Kp9xQm2VrL4.json
+```
+
+The app validates the URL ID before attempting to load a config:
+
+```js
+/^[A-Za-z0-9]{12}$/
+```
+
+Malformed IDs, nonexistent IDs, and missing config files all render the same calculator-not-found state.
+
+Required calculator fields:
+
+- `customerId`: stable customer identifier.
 - `customerName`: customer display name.
-- `offerId`: stable offer identifier used in `/o/<offer-id>`.
-- `offerName`: buyer-facing offer/product name.
+- `calculatorId`: stable random calculator identifier matching the filename.
+- `calculatorName`: buyer-facing calculator name.
 - `plugin`: calculation plugin key.
 - `configuration`: plugin-specific configuration object.
 
@@ -32,8 +69,8 @@ Example:
 {
   "customerId": "ilesztuk-demo",
   "customerName": "IleSztuk Demo",
-  "offerId": "default-area-offer",
-  "offerName": "Sklejka 18 mm",
+  "calculatorId": "7Kp9xQm2VrL4",
+  "calculatorName": "Sklejka 18 mm",
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",
@@ -46,6 +83,29 @@ Example:
   }
 }
 ```
+
+## Public Catalogs
+
+The app does not publish:
+
+- a calculator manifest;
+- an all-calculators page;
+- a customer calculator listing page;
+- seller indexes;
+- sitemap entries for calculator URLs;
+- links between unrelated calculator pages.
+
+Directory listing must not be enabled for `public/calculators/`. If a static host does not support directory listing, no extra mechanism is required.
+
+## Search Indexing
+
+The static app shell includes:
+
+```html
+<meta name="robots" content="noindex, nofollow">
+```
+
+Calculator URLs are not included in a sitemap.
 
 ## Calculation Plugins
 
@@ -87,7 +147,7 @@ Supported pricing modes:
 
 ## Buyer Result
 
-After form submission, the browser validates input, computes the result, generates the marketplace note, and renders the result on the offer page.
+After form submission, the browser validates input, computes the result, generates the marketplace note, and renders the result on the calculator page.
 
 The buyer result page shows:
 
@@ -107,19 +167,15 @@ Marketplace notes contain only order-note content, for example:
 
 Marketplace notes do not include external URLs.
 
-## Tests
+## Developer Utility
 
-Test coverage should verify:
+New calculator IDs are generated with:
 
-- offer JSON loading;
-- offer lookup by `offerId`;
-- customer offer listing by `customerId`;
-- rectangular-piece validation;
-- configured limits;
-- fixed dimension lists;
-- coefficient, area-per-item, and multiplier pricing;
-- staged rounding;
-- generated marketplace-note content.
+```text
+npm run generate-calculator-id
+```
+
+The utility uses `crypto.randomBytes()` and outputs one random 12-character base62 ID.
 
 ## Static Hosting
 
@@ -127,7 +183,24 @@ The site can be served from `public/` without a runtime backend.
 
 Vercel uses `vercel.json` rewrites so clean URLs render the app shell:
 
-- `/o/<offer-id>` -> `/index.html`
-- `/c/<customer-id>` -> `/index.html`
+```text
+/k/<calculator-id> -> /index.html
+```
 
 GitHub Pages can use `public/404.html` as the app shell fallback for direct navigation to clean URLs.
+
+## Tests
+
+Test coverage should verify:
+
+- calculator JSON files use random ID filenames;
+- there is no published calculator manifest;
+- malformed calculator IDs are rejected before fetch;
+- matching calculator config is fetched directly by ID;
+- calculator ID generation uses 12-character base62 output;
+- rectangular-piece validation;
+- configured limits;
+- fixed dimension lists;
+- coefficient, area-per-item, and multiplier pricing;
+- staged rounding;
+- generated marketplace-note content.

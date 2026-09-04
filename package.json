@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/static-server.js",
+    "generate-calculator-id": "node scripts/generate-calculator-id.js",
     "test": "node --test"
   },
   "engines": {

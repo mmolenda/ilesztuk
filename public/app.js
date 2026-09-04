@@ -1,5 +1,5 @@
-import { calculateOffer, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js";
-import { loadCustomerOffers, loadOffer } from "./js/offers.js";
+import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js";
+import { isValidCalculatorId, loadCalculator } from "./js/calculators.js";
 
 const app = document.querySelector("#app");
 
@@ -14,29 +14,21 @@ async function main() {
     renderLanding();
     return;
   }
-  if (route.name === "offer") {
-    const offer = await loadOffer(route.offerId);
-    offer ? renderOfferPage(offer) : renderNotFound();
-    return;
-  }
-  if (route.name === "customer") {
-    const offers = await loadCustomerOffers(route.customerId);
-    offers.length > 0 ? renderCustomerOffers(route.customerId, offers) : renderNotFound();
+  if (route.name === "calculator") {
+    const calculator = await loadCalculator(route.calculatorId);
+    calculator ? renderCalculatorPage(calculator) : renderNotFound();
     return;
   }
   renderNotFound();
 }
 
 function parseRoute(pathname) {
-  const parts = pathname.split("/").filter(Boolean).map(decodeURIComponent);
+  const parts = pathname.split("/").filter(Boolean);
   if (parts.length === 0) {
     return { name: "home" };
   }
-  if (parts.length === 2 && parts[0] === "o") {
-    return { name: "offer", offerId: parts[1] };
-  }
-  if (parts.length === 2 && parts[0] === "c") {
-    return { name: "customer", customerId: parts[1] };
+  if (parts.length === 2 && parts[0] === "k" && isValidCalculatorId(parts[1])) {
+    return { name: "calculator", calculatorId: parts[1] };
   }
   return { name: "not-found" };
 }
@@ -51,49 +43,31 @@ function renderLanding() {
   `;
 }
 
-function renderCustomerOffers(customerId, offers) {
-  document.title = `${offers[0].customerName} - IleSztuk`;
+function renderCalculatorPage(calculator, error = "") {
+  document.title = `${calculator.calculatorName} - IleSztuk`;
   app.innerHTML = `
     <section class="panel">
-      <h1>${escapeHtml(offers[0].customerName)}</h1>
-      <p class="muted">${escapeHtml(customerId)}</p>
-      <ul class="offer-list">
-        ${offers.map((offer) => `
-          <li>
-            <a href="/o/${encodeURIComponent(offer.offerId)}">${escapeHtml(offer.offerName)}</a>
-            <span>${escapeHtml(offer.offerId)}</span>
-          </li>
-        `).join("")}
-      </ul>
-    </section>
-  `;
-}
-
-function renderOfferPage(offer, error = "") {
-  document.title = `${offer.offerName} - IleSztuk`;
-  app.innerHTML = `
-    <section class="panel">
-      <h1>${escapeHtml(offer.offerName)}</h1>
-      <p class="muted">${escapeHtml(offer.customerName)}</p>
+      <h1>${escapeHtml(calculator.calculatorName)}</h1>
+      <p class="muted">${escapeHtml(calculator.customerName)}</p>
       ${error ? `<p class="error">${escapeHtml(error)}</p>` : ""}
-      ${usesGraphicalRectangularForm(offer) ? renderFurnitureForm(offer) : renderAreaForm(offer)}
+      ${usesGraphicalRectangularCalculatorForm(calculator) ? renderFurnitureCalculatorForm(calculator) : renderAreaCalculatorForm(calculator)}
     </section>
   `;
   bindRows();
-  bindCalculationForm(offer);
+  bindCalculatorForm(calculator);
 }
 
-function usesGraphicalRectangularForm(offer) {
+function usesGraphicalRectangularCalculatorForm(calculator) {
   return Boolean(
-    offer.configuration.edges?.enabled
-      || offer.configuration.decor?.enabled
-      || offer.configuration.dimensions?.first?.key === "length"
-      || offer.configuration.dimensions?.second?.key === "length",
+    calculator.configuration.edges?.enabled
+      || calculator.configuration.decor?.enabled
+      || calculator.configuration.dimensions?.first?.key === "length"
+      || calculator.configuration.dimensions?.second?.key === "length",
   );
 }
 
-function renderAreaForm(offer) {
-  const config = offer.configuration;
+function renderAreaCalculatorForm(calculator) {
+  const config = calculator.configuration;
   const first = config.dimensions?.first ?? { key: "width", label: "Szerokość" };
   const second = config.dimensions?.second ?? { key: "height", label: "Wysokość" };
   const minDimension = formatMetric(config.constraints?.minDimensionCm ?? 0.01).replace(",", ".");
@@ -127,8 +101,8 @@ function renderAreaForm(offer) {
   `;
 }
 
-function renderFurnitureForm(offer) {
-  const config = offer.configuration;
+function renderFurnitureCalculatorForm(calculator) {
+  const config = calculator.configuration;
   const rules = [
     ...rectangularRuleChips(config),
     config.billableDimensions?.minCm ? `Min. wymiar do rozliczenia ${formatMetric(config.billableDimensions.minCm)} cm` : null,
@@ -144,7 +118,7 @@ function renderFurnitureForm(offer) {
         ${rules.map((rule) => `<span>${escapeHtml(rule)}</span>`).join("")}
       </div>
       <div class="form-grid furniture-grid" data-piece-rows>
-        ${renderFurnitureRow(0, false, offer)}
+        ${renderFurnitureRow(0, false, calculator)}
       </div>
       <div class="row-controls">
         <button type="button" class="icon-button" data-add-row aria-label="Dodaj wiersz">+</button>
@@ -152,14 +126,14 @@ function renderFurnitureForm(offer) {
       <button type="submit">Oblicz</button>
     </form>
     <template data-row-template>
-      ${renderFurnitureRow("__INDEX__", true, offer)}
+      ${renderFurnitureRow("__INDEX__", true, calculator)}
     </template>
     <section id="result"></section>
   `;
 }
 
-function renderFurnitureRow(index, removable, offer) {
-  const config = offer.configuration;
+function renderFurnitureRow(index, removable, calculator) {
+  const config = calculator.configuration;
   const minDimension = formatMetric(config.constraints?.minDimensionCm ?? 0.01).replace(",", ".");
   const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
   const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
@@ -227,7 +201,7 @@ function bindRows() {
   updateRowControls();
 }
 
-function bindCalculationForm(offer) {
+function bindCalculatorForm(calculator) {
   const form = document.querySelector("[data-calculation-form]");
   if (!form) {
     return;
@@ -237,11 +211,11 @@ function bindCalculationForm(offer) {
     event.preventDefault();
     try {
       const body = Object.fromEntries(new FormData(form));
-      const calculation = calculateOffer({ pieces: collectPieces(body, offer) }, offer);
-      renderBuyerResult(calculation, offer);
+      const calculation = calculateForCalculator({ pieces: collectPieces(body, calculator) }, calculator);
+      renderBuyerResult(calculation, calculator);
     } catch (error) {
       if (error instanceof ValidationError) {
-        renderOfferPage(offer, error.message);
+        renderCalculatorPage(calculator, error.message);
         return;
       }
       throw error;
@@ -249,10 +223,10 @@ function bindCalculationForm(offer) {
   });
 }
 
-function collectPieces(body, offer) {
+function collectPieces(body, calculator) {
   const pieces = [];
-  const firstKey = offer.configuration?.dimensions?.first?.key ?? "width";
-  const secondKey = offer.configuration?.dimensions?.second?.key ?? "height";
+  const firstKey = calculator.configuration?.dimensions?.first?.key ?? "width";
+  const secondKey = calculator.configuration?.dimensions?.second?.key ?? "height";
   for (let index = 0; index < 10; index += 1) {
     const quantity = body[`quantity_${index}`];
     const first = body[`${firstKey}_${index}`];
@@ -272,19 +246,19 @@ function collectPieces(body, offer) {
   return pieces;
 }
 
-function renderBuyerResult(calculation, offer) {
+function renderBuyerResult(calculation, calculator) {
   const result = calculation.result;
   const target = document.querySelector("#result");
   target.innerHTML = `
     <div class="result-panel">
-      <p class="muted">${escapeHtml(offer.offerName)}</p>
+      <p class="muted">${escapeHtml(calculator.calculatorName)}</p>
       <h2>Kup ${result.purchasableItems} ${escapeHtml(result.purchasableUnitLabel)}</h2>
       <h3>Elementy</h3>
       <ul class="pieces">
-        ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, offer))}</li>`).join("")}
+        ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, calculator))}</li>`).join("")}
       </ul>
       <dl>
-        ${sellerMetricsFor(result, offer).map(([label, value]) => `
+        ${sellerMetricsFor(result, calculator).map(([label, value]) => `
           <div><dt>${escapeHtml(label)}:</dt><dd>${escapeHtml(value)}</dd></div>
         `).join("")}
       </dl>

@@ -1,8 +1,8 @@
 {
   "customerId": "ilesztuk-demo",
   "customerName": "IleSztuk Demo",
-  "offerId": "default-area-offer",
-  "offerName": "Sklejka 18 mm",
+  "calculatorId": "HyJazWGdZ8y5",
+  "calculatorName": "Sklejka 18 mm",
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",

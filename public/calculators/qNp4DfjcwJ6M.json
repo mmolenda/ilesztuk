@@ -1,8 +1,8 @@
 {
   "customerId": "ilesztuk-demo",
   "customerName": "IleSztuk Demo",
-  "offerId": "furniture-board-offer",
-  "offerName": "Formatki meblowe z oklejeniem",
+  "calculatorId": "qNp4DfjcwJ6M",
+  "calculatorName": "Formatki meblowe - minimum rozliczeniowe 21 cm",
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",
@@ -20,14 +20,24 @@
     "purchasableQuantity": {
       "rounding": { "mode": "round", "precision": 0 }
     },
+    "billableDimensions": {
+      "minCm": 21
+    },
     "edges": {
       "enabled": true,
-      "minCoatedEdgeCm": 8
+      "default": [],
+      "minCoatedEdgeCm": null
+    },
+    "decor": {
+      "enabled": true,
+      "required": true
     },
     "constraints": {
-      "minDimensionCm": 8,
-      "maxPerimeterCm": 460,
-      "enforceSecondNotGreaterThanFirst": true
+      "minDimensionCm": 1,
+      "maxLengthCm": 140,
+      "packageMaxCm": 300,
+      "packageHeightCm": 0,
+      "enforceSecondNotGreaterThanFirst": false
     }
   }
 }

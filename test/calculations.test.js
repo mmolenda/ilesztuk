@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  calculateOffer,
+  calculateForCalculator,
   createMarketplaceNote,
   formatPieceLine,
   formatResultPieceLine,
@@ -9,11 +9,11 @@ import {
   ValidationError,
 } from "../public/js/calculations.js";
 
-const areaOffer = Object.freeze({
+const areaCalculator = Object.freeze({
   customerId: "demo",
   customerName: "Demo",
-  offerId: "area-offer",
-  offerName: "Sklejka 18 mm",
+  calculatorId: "AbC123xYz789",
+  calculatorName: "Sklejka 18 mm",
   plugin: "rectangular_pieces",
   configuration: {
     pricing: {
@@ -24,11 +24,11 @@ const areaOffer = Object.freeze({
   },
 });
 
-const furnitureOffer = Object.freeze({
+const furnitureCalculator = Object.freeze({
   customerId: "demo",
   customerName: "Demo",
-  offerId: "furniture-offer",
-  offerName: "Formatki meblowe",
+  calculatorId: "QrS456uVw012",
+  calculatorName: "Formatki meblowe",
   plugin: "rectangular_pieces",
   configuration: {
     dimensions: {
@@ -58,13 +58,13 @@ const furnitureOffer = Object.freeze({
 
 describe("marketplace note", () => {
   it("aggregates identical pieces and contains only order-note content", () => {
-    const calculation = calculateOffer({
+    const calculation = calculateForCalculator({
       pieces: [
         { quantity: 2, width: 30, height: 45 },
         { quantity: 1, width: 30, height: 45 },
         { quantity: 1, width: 50, height: 60 },
       ],
-    }, areaOffer);
+    }, areaCalculator);
 
     assert.equal(calculation.marketplaceNote, [
       "3x 30 cm x 45 cm",
@@ -77,39 +77,39 @@ describe("marketplace note", () => {
     assert.equal(formatPieceLine({ quantity: 3, width: 20, height: 80, unit: "cm" }), "3x 20 cm x 80 cm");
   });
 
-  it("formats compact piece lines using offer dimension order", () => {
+  it("formats compact piece lines using calculator dimension order", () => {
     assert.equal(
-      formatResultPieceLine({ quantity: 1, length: 52, width: 42, unit: "cm", edges: [] }, furnitureOffer),
+      formatResultPieceLine({ quantity: 1, length: 52, width: 42, unit: "cm", edges: [] }, furnitureCalculator),
       "1x 52 cm x 42 cm, bez oklejenia",
     );
   });
 
   it("can generate a note from an already calculated result", () => {
-    const calculation = calculateOffer({
+    const calculation = calculateForCalculator({
       pieces: [{ quantity: 2, width: 30, height: 45 }],
-    }, areaOffer);
+    }, areaCalculator);
 
-    assert.equal(createMarketplaceNote(calculation.result, areaOffer), "2x 30 cm x 45 cm");
+    assert.equal(createMarketplaceNote(calculation.result, areaCalculator), "2x 30 cm x 45 cm");
   });
 });
 
 describe("validation and calculation", () => {
   it("requires at least one valid piece", () => {
     assert.throws(
-      () => validateBuyerInput({ pieces: [] }, areaOffer),
+      () => validateBuyerInput({ pieces: [] }, areaCalculator),
       ValidationError,
     );
   });
 
-  it("calculates furniture boards from offer parameters", () => {
-    const calculation = calculateOffer({
+  it("calculates furniture boards from calculator parameters", () => {
+    const calculation = calculateForCalculator({
       pieces: [{
         quantity: 1,
         length: 42,
         width: 52,
         edges: ["top", "bottom"],
       }],
-    }, furnitureOffer);
+    }, furnitureCalculator);
 
     assert.equal(calculation.result.purchasableItems, 22);
     assert.equal(calculation.result.totalArea, 2184);
@@ -117,27 +117,27 @@ describe("validation and calculation", () => {
     assert.equal(calculation.marketplaceNote, "1x 42 cm x 52 cm, oklejenie: góra, dół");
   });
 
-  it("enforces furniture limits from the offer configuration", () => {
+  it("enforces furniture limits from the calculator configuration", () => {
     assert.throws(
       () => validateBuyerInput({
         pieces: [{ quantity: 1, length: 240, width: 1, edges: ["left"] }],
-      }, furnitureOffer),
+      }, furnitureCalculator),
       /każdy bok musi mieć minimum 8 cm/,
     );
 
     assert.throws(
       () => validateBuyerInput({
         pieces: [{ quantity: 1, length: 231, width: 8, edges: [] }],
-      }, furnitureOffer),
+      }, furnitureCalculator),
       /suma boków jednej formatki nie może przekroczyć 460 cm/,
     );
   });
 
   it("uses a billable minimum dimension when configured", () => {
-    const offer = {
-      ...furnitureOffer,
+    const calculator = {
+      ...furnitureCalculator,
       configuration: {
-        ...furnitureOffer.configuration,
+        ...furnitureCalculator.configuration,
         billableDimensions: {
           minCm: 21,
         },
@@ -151,16 +151,16 @@ describe("validation and calculation", () => {
           minCoatedEdgeCm: null,
         },
         constraints: {
-          ...furnitureOffer.configuration.constraints,
+          ...furnitureCalculator.configuration.constraints,
           minDimensionCm: 1,
           maxPerimeterCm: null,
         },
       },
     };
 
-    const calculation = calculateOffer({
+    const calculation = calculateForCalculator({
       pieces: [{ quantity: 1, length: 100, width: 8, decor: "Dąb", edges: [] }],
-    }, offer);
+    }, calculator);
 
     assert.equal(calculation.result.totalArea, 800);
     assert.equal(calculation.result.totalBillableArea, 2100);
@@ -169,26 +169,26 @@ describe("validation and calculation", () => {
   });
 
   it("requires decor and applies configured edge minimums", () => {
-    const decorOffer = {
-      ...furnitureOffer,
+    const decorCalculator = {
+      ...furnitureCalculator,
       configuration: {
-        ...furnitureOffer.configuration,
+        ...furnitureCalculator.configuration,
         decor: {
           enabled: true,
           required: true,
         },
       },
     };
-    const edge15Offer = {
-      ...furnitureOffer,
+    const edge15Calculator = {
+      ...furnitureCalculator,
       configuration: {
-        ...furnitureOffer.configuration,
+        ...furnitureCalculator.configuration,
         edges: {
           enabled: true,
           minCoatedEdgeCm: 15,
         },
         constraints: {
-          ...furnitureOffer.configuration.constraints,
+          ...furnitureCalculator.configuration.constraints,
           minDimensionCm: 1,
         },
       },
@@ -197,21 +197,21 @@ describe("validation and calculation", () => {
     assert.throws(
       () => validateBuyerInput({
         pieces: [{ quantity: 1, length: 100, width: 8, decor: "", edges: [] }],
-      }, decorOffer),
+      }, decorCalculator),
       /podaj wybrany dekor/,
     );
 
     assert.throws(
       () => validateBuyerInput({
         pieces: [{ quantity: 1, length: 100, width: 14, edges: ["right"] }],
-      }, edge15Offer),
+      }, edge15Calculator),
       /oklejany bok musi mieć minimum 15 cm/,
     );
   });
 
-  it("supports panel x20 offers with mathematical staged rounding", () => {
-    const offer = {
-      ...areaOffer,
+  it("supports panel x20 calculators with mathematical staged rounding", () => {
+    const calculator = {
+      ...areaCalculator,
       configuration: {
         dimensions: {
           first: { key: "width", label: "Szerokość" },
@@ -233,20 +233,20 @@ describe("validation and calculation", () => {
       },
     };
 
-    const singleRow = calculateOffer({
+    const singleRow = calculateForCalculator({
       pieces: [{ quantity: 7, width: 63, height: 33.3 }],
-    }, offer);
+    }, calculator);
 
     assert.equal(singleRow.result.rows[0].billableDimensionsCm.height, 34);
     assert.equal(singleRow.result.rows[0].areaForTotal, 1.5);
     assert.equal(singleRow.result.purchasableItems, 30);
 
-    const multiRow = calculateOffer({
+    const multiRow = calculateForCalculator({
       pieces: [
         { quantity: 4, width: 78, height: 42 },
         { quantity: 5, width: 67, height: 43 },
       ],
-    }, offer);
+    }, calculator);
 
     assert.equal(multiRow.result.rows[0].areaForTotal, 1.31);
     assert.equal(multiRow.result.rows[1].areaForTotal, 1.44);
@@ -254,11 +254,11 @@ describe("validation and calculation", () => {
     assert.equal(multiRow.result.purchasableItems, 55);
   });
 
-  it("supports offer-defined fixed dimension lists", () => {
-    const offer = {
-      ...areaOffer,
+  it("supports calculator-defined fixed dimension lists", () => {
+    const calculator = {
+      ...areaCalculator,
       configuration: {
-        ...areaOffer.configuration,
+        ...areaCalculator.configuration,
         dimensions: {
           first: {
             key: "width",
@@ -274,16 +274,16 @@ describe("validation and calculation", () => {
       },
     };
 
-    const calculation = calculateOffer({
+    const calculation = calculateForCalculator({
       pieces: [{ quantity: 1, width: 60, height: 40 }],
-    }, offer);
+    }, calculator);
 
     assert.equal(calculation.result.totalArea, 0.24);
 
     assert.throws(
       () => validateBuyerInput({
         pieces: [{ quantity: 1, width: 45, height: 40 }],
-      }, offer),
+      }, calculator),
       /szerokość musi mieć jedną z wartości: 30, 60, 90 cm/,
     );
   });
