@@ -253,20 +253,23 @@ function renderBuyerResult(calculation, calculator) {
     <div class="result-panel">
       <p class="muted">${escapeHtml(calculator.calculatorName)}</p>
       <h2>Kup ${result.purchasableItems} ${escapeHtml(result.purchasableUnitLabel)}</h2>
-      <h3>Elementy</h3>
-      <ul class="pieces">
-        ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, calculator))}</li>`).join("")}
-      </ul>
-      <dl>
-        ${sellerMetricsFor(result, calculator).map(([label, value]) => `
-          <div><dt>${escapeHtml(label)}:</dt><dd>${escapeHtml(value)}</dd></div>
-        `).join("")}
-      </dl>
       <h3>Do uwag do zamówienia wklej</h3>
       <pre id="marketplace-note">${escapeHtml(calculation.marketplaceNote)}</pre>
       <div class="actions">
         <button type="button" data-copy-target="marketplace-note">Kopiuj</button>
       </div>
+      <details class="calculation-details">
+        <summary>Szczegóły kalkulacji</summary>
+        <h3>Elementy</h3>
+        <ul class="pieces">
+          ${result.pieces.map((piece) => `<li>${escapeHtml(formatResultPieceLine(piece, calculator))}</li>`).join("")}
+        </ul>
+        <dl>
+          ${sellerMetricsFor(result, calculator).map(([label, value]) => `
+            <div><dt>${escapeHtml(label)}:</dt><dd>${escapeHtml(value)}</dd></div>
+          `).join("")}
+        </dl>
+      </details>
     </div>
   `;
   target.querySelector("[data-copy-target]").addEventListener("click", async (event) => {

@@ -286,6 +286,41 @@ button:disabled {
   background: #5d6b65;
 }
 
+.result-panel {
+  border-top: 1px solid #d9e1dd;
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+.result-panel h2 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1.05;
+  margin: 0;
+}
+
+.result-panel h3 {
+  font-size: 1rem;
+  margin: 8px 0 0;
+}
+
+.calculation-details {
+  border-top: 1px solid #d9e1dd;
+  margin-top: 10px;
+  padding-top: 14px;
+}
+
+.calculation-details summary {
+  color: #0f6b57;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.calculation-details[open] summary {
+  margin-bottom: 12px;
+}
+
 pre {
   background: #eef3f1;
   border: 1px solid #d9e1dd;
