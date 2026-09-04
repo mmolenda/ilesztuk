@@ -1,4 +1,4 @@
-import { PLUGINS } from "./plugins/index.js?v=20260904-1740";
+import { PLUGINS } from "./plugins/index.js?v=20260904-1750";
 
 export { PLUGINS };
 

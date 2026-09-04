@@ -1,7 +1,7 @@
-import { calculateForCalculator, ValidationError } from "./js/calculations.js?v=20260904-1740";
-import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1740";
-import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1740";
-import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1740";
+import { calculateForCalculator, ValidationError } from "./js/calculations.js?v=20260904-1750";
+import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1750";
+import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1750";
+import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1750";
 
 const app = document.querySelector("#app");
 
@@ -246,7 +246,7 @@ function bindCalculatorForm(calculator) {
     const validation = validateCalculatorForm(form, calculator);
     renderFieldValidation(form, validation, showErrors);
     if (!validation.valid) {
-      renderInvalidResult(validation, calculator, { showSummary: showErrors || hasTouchedFields(form) });
+      renderInvalidResult(validation, calculator, { hasStarted: hasTouchedFields(form) });
       return;
     }
 
@@ -256,7 +256,7 @@ function bindCalculatorForm(calculator) {
       renderBuyerResult(calculation, calculator);
     } catch (error) {
       if (error instanceof ValidationError) {
-        renderInvalidResult({ errors: [], formErrors: [error.message], valid: false }, calculator, { showSummary: true });
+        renderInvalidResult({ errors: [], formErrors: [error.message], valid: false }, calculator, { hasStarted: true });
         return;
       }
       throw error;
@@ -516,26 +516,33 @@ function renderOrderingRulesSection(rules) {
   `;
 }
 
-function renderInvalidResult(validation, calculator, { showSummary = false } = {}) {
+function renderInvalidResult(validation, calculator, { hasStarted = false } = {}) {
   const target = document.querySelector("#result");
   if (!target) {
     return;
   }
-  const messages = [...validation.errors.map((error) => error.message), ...(validation.formErrors ?? [])];
-  const uniqueMessages = [...new Set(messages)];
+  const hasInvalidValues = validation.errors.some((error) => error.type === "invalid")
+    || (validation.formErrors?.length ?? 0) > 0;
+  const message = !hasStarted
+    ? {
+      heading: "Wynik pojawi się tutaj",
+      description: "Uzupełnij wymiary powyżej, aby obliczyć liczbę sztuk do kupienia.",
+    }
+    : hasInvalidValues
+      ? {
+        heading: "Popraw zaznaczone pola",
+        description: "Niektóre wartości są poza dozwolonym zakresem.",
+      }
+      : {
+        heading: "Uzupełnij wymagane dane",
+        description: "Wprowadź brakujące wartości, aby obliczyć liczbę sztuk.",
+      };
   target.innerHTML = `
     <div class="result-panel is-invalid">
       <section class="result-hero invalid-result">
-        <p>Wynik chwilowo niedostępny</p>
-        <h2>Uzupełnij poprawnie pola</h2>
-        <span>Popraw oznaczone dane, aby zobaczyć liczbę sztuk do kupienia.</span>
+        <h2>${message.heading}</h2>
+        <span>${message.description}</span>
       </section>
-      ${showSummary && uniqueMessages.length > 0 ? `
-        <div class="validation-summary">
-          <strong>Do poprawy:</strong>
-          <ul>${uniqueMessages.slice(0, 4).map((message) => `<li>${escapeHtml(message)}</li>`).join("")}</ul>
-        </div>
-      ` : ""}
       <details class="calculation-details">
         <summary>Szczegóły obliczeń</summary>
         <div class="details-grid">
@@ -578,12 +585,12 @@ function validateCalculatorForm(form, calculator) {
     }
 
     if (config.constraints?.enforceSecondNotGreaterThanFirst && secondValue > firstValue) {
-      addValidationError(errors, `${secondDimension.key}_${index}`, `${rowLabel}: ${secondDimension.label.toLowerCase()} nie może być większa niż ${firstDimension.label.toLowerCase()}.`);
+      addValidationError(errors, `${secondDimension.key}_${index}`, `${secondDimension.label} nie może być większa niż ${firstDimension.label.toLowerCase()}.`);
     }
 
     const perimeter = 2 * (firstValue + secondValue);
     if (config.constraints?.maxPerimeterCm && perimeter > config.constraints.maxPerimeterCm) {
-      addValidationError(errors, `${secondDimension.key}_${index}`, `${rowLabel}: suma boków jednej formatki nie może przekroczyć ${formatLength(config.constraints.maxPerimeterCm, config)}.`);
+      addValidationError(errors, `${secondDimension.key}_${index}`, `Suma boków jednej formatki nie może przekroczyć ${formatLength(config.constraints.maxPerimeterCm, config)}.`);
     }
 
     const selectedEdges = ["top", "right", "bottom", "left"].filter((edge) => row.querySelector(`[name="edge_${edge}_${cssEscape(index)}"]`)?.checked);
@@ -594,7 +601,7 @@ function validateCalculatorForm(form, calculator) {
     for (const edge of selectedEdges) {
       const edgeLength = dimensionValueFor(dimensionKeyForEdge(edge), dimensions, config);
       if (config.edges?.minFinishEdgeCm && edgeLength < config.edges.minFinishEdgeCm) {
-        addValidationError(errors, `edges_${index}`, `${rowLabel}: wykańczany bok musi mieć minimum ${formatLength(config.edges.minFinishEdgeCm, config)}.`);
+        addValidationError(errors, `edges_${index}`, `Wykańczany bok musi mieć minimum ${formatLength(config.edges.minFinishEdgeCm, config)}.`);
         break;
       }
     }
@@ -608,15 +615,15 @@ function validateQuantity(row, index, rowLabel, errors) {
   const value = row.querySelector(`[name="${cssEscape(name)}"]`)?.value;
   const number = Number(value);
   if (isBlank(value)) {
-    addValidationError(errors, name, `${rowLabel}: podaj ilość.`);
+    addValidationError(errors, name, "Podaj ilość.", "missing");
     return null;
   }
   if (!Number.isInteger(number) || number <= 0) {
-    addValidationError(errors, name, `${rowLabel}: ilość musi być liczbą całkowitą większą od 0.`);
+    addValidationError(errors, name, "Liczba sztuk musi być liczbą całkowitą większą od 0.");
     return null;
   }
   if (number > MAX_PIECE_QUANTITY) {
-    addValidationError(errors, name, `${rowLabel}: liczba sztuk nie może przekroczyć ${MAX_PIECE_QUANTITY.toLocaleString("pl-PL")}.`);
+    addValidationError(errors, name, `Liczba sztuk nie może przekroczyć ${MAX_PIECE_QUANTITY.toLocaleString("pl-PL")}.`);
     return null;
   }
   return number;
@@ -627,11 +634,11 @@ function validateDimension(row, index, dimension, rowLabel, config, errors) {
   const value = row.querySelector(`[name="${cssEscape(name)}"]`)?.value;
   const displayNumber = Number(value);
   if (isBlank(value)) {
-    addValidationError(errors, name, `${rowLabel}: podaj ${dimension.label.toLowerCase()}.`);
+    addValidationError(errors, name, `Podaj ${dimension.label.toLowerCase()}.`, "missing");
     return null;
   }
   if (!Number.isFinite(displayNumber) || displayNumber <= 0) {
-    addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} musi być liczbą większą od 0.`);
+    addValidationError(errors, name, `${dimension.label} musi być liczbą większą od 0.`);
     return null;
   }
 
@@ -639,15 +646,15 @@ function validateDimension(row, index, dimension, rowLabel, config, errors) {
   const minimum = minimumForDimension(dimension.key, config);
   const maximum = maximumForDimension(dimension.key, config);
   if (minimum && valueCm < minimum) {
-    addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} musi mieć minimum ${formatLength(minimum, config)}.`);
+    addValidationError(errors, name, `${dimension.label} musi mieć minimum ${formatLength(minimum, config)}.`);
   }
   if (maximum && valueCm > maximum) {
-    addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} nie może przekroczyć ${formatLength(maximum, config)}.`);
+    addValidationError(errors, name, `${dimension.label} nie może przekroczyć ${formatLength(maximum, config)}.`);
   }
   if (Array.isArray(dimension.allowedValuesCm) && dimension.allowedValuesCm.length > 0) {
     const allowed = dimension.allowedValuesCm.some((allowedValue) => Math.abs(Number(allowedValue) - valueCm) < 0.000001);
     if (!allowed) {
-      addValidationError(errors, name, `${rowLabel}: ${dimension.label.toLowerCase()} wybierz z listy dostępnych wartości.`);
+    addValidationError(errors, name, `${dimension.label} wybierz z listy dostępnych wartości.`);
     }
   }
   return errors.some((error) => error.field === name) ? null : valueCm;
@@ -658,17 +665,17 @@ function validateCustomFields(row, rowIndex, rowLabel, config, errors) {
     const name = `custom_${fieldIndex}_${rowIndex}`;
     const value = row.querySelector(`[name="${cssEscape(name)}"]`)?.value?.trim() ?? "";
     if (field.required && !value) {
-      addValidationError(errors, name, `${rowLabel}: podaj ${field.label.toLowerCase()}.`);
+      addValidationError(errors, name, `Podaj ${field.label.toLowerCase()}.`, "missing");
       return;
     }
     if (value && field.allowedValues.length > 0 && !field.allowedValues.includes(value)) {
-      addValidationError(errors, name, `${rowLabel}: ${field.label.toLowerCase()} wybierz z listy dostępnych wartości.`);
+      addValidationError(errors, name, `${field.label} wybierz z listy dostępnych wartości.`);
     }
   });
 }
 
-function addValidationError(errors, field, message) {
-  errors.push({ field, message });
+function addValidationError(errors, field, message, type = "invalid") {
+  errors.push({ field, message, type });
 }
 
 function renderFieldValidation(form, validation, showAllErrors) {
