@@ -1,7 +1,7 @@
 import { calculateForCalculator, formatResultPieceLine, sellerMetricsFor, ValidationError } from "./js/calculations.js?v=20260904-1447";
 import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1447";
 import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1447";
-import { MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1447";
+import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1447";
 
 const app = document.querySelector("#app");
 
@@ -460,9 +460,7 @@ function validateCalculatorForm(form, calculator) {
       [secondDimension.key]: secondValue,
     };
     for (const edge of selectedEdges) {
-      const edgeLength = edge === "top" || edge === "bottom"
-        ? dimensionValueFor("length", dimensions, config)
-        : dimensionValueFor("width", dimensions, config);
+      const edgeLength = dimensionValueFor(dimensionKeyForEdge(edge), dimensions, config);
       if (config.edges?.minFinishEdgeCm && edgeLength < config.edges.minFinishEdgeCm) {
         addValidationError(errors, `edges_${index}`, `${rowLabel}: wykańczany bok musi mieć minimum ${formatLength(config.edges.minFinishEdgeCm, config)}.`);
         break;

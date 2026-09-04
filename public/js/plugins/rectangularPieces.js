@@ -57,6 +57,10 @@ export const DEFAULT_RECTANGULAR_CONFIG = Object.freeze({
 
 export const MAX_PIECE_QUANTITY = 10_000;
 
+export function dimensionKeyForEdge(edge) {
+  return edge === "left" || edge === "right" ? "length" : "width";
+}
+
 export const rectangularPiecesPlugin = Object.freeze({
   label: "Elementy prostokątne",
   validateInput,
@@ -283,9 +287,11 @@ function validateConstraints({
   validateCustomFields(rowLabel, customFields, config.customFields, ValidationError);
 
   for (const edge of edges) {
-    const edgeLength = edge === "top" || edge === "bottom"
-      ? dimensionValue("length", { [firstKey]: firstValue, [secondKey]: secondValue }, config)
-      : dimensionValue("width", { [firstKey]: firstValue, [secondKey]: secondValue }, config);
+    const edgeLength = dimensionValue(
+      dimensionKeyForEdge(edge),
+      { [firstKey]: firstValue, [secondKey]: secondValue },
+      config,
+    );
     if (config.edges.minFinishEdgeCm && edgeLength < config.edges.minFinishEdgeCm) {
       throw new ValidationError(`${rowLabel}: wykańczany bok musi mieć minimum ${formatLength(config.edges.minFinishEdgeCm, config)}.`);
     }
@@ -454,10 +460,7 @@ function normalizeEdges(value) {
 
 function coatedEdgeLength(piece, config) {
   return piece.edges.reduce((total, edge) => {
-    if (edge === "top" || edge === "bottom") {
-      return total + dimensionValue("length", piece, config);
-    }
-    return total + dimensionValue("width", piece, config);
+    return total + dimensionValue(dimensionKeyForEdge(edge), piece, config);
   }, 0);
 }
 

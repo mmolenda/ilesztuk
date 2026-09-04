@@ -125,7 +125,7 @@ describe("validation and calculation", () => {
 
     assert.equal(calculation.result.purchasableItems, 22);
     assert.equal(calculation.result.totalArea, 2184);
-    assert.equal(calculation.result.totalCoatedEdgeCm, 84);
+    assert.equal(calculation.result.totalCoatedEdgeCm, 104);
     assert.equal(calculation.marketplaceNote, "1x 42 cm x 52 cm, Oklejenie: góra, dół");
   });
 
@@ -241,6 +241,13 @@ describe("validation and calculation", () => {
         },
       },
     };
+    const edge8Calculator = {
+      ...edge15Calculator,
+      configuration: {
+        ...edge15Calculator.configuration,
+        edges: { ...edge15Calculator.configuration.edges, minFinishEdgeCm: 8 },
+      },
+    };
 
     assert.throws(
       () => validateBuyerInput({
@@ -258,9 +265,19 @@ describe("validation and calculation", () => {
 
     assert.throws(
       () => validateBuyerInput({
-        pieces: [{ quantity: 1, length: 100, width: 14, edges: ["right"] }],
+        pieces: [{ quantity: 1, length: 100, width: 14, edges: ["top"] }],
       }, edge15Calculator),
       /wykańczany bok musi mieć minimum 15 cm/,
+    );
+
+    assert.doesNotThrow(() => validateBuyerInput({
+      pieces: [{ quantity: 1, length: 10, width: 7, edges: ["left"] }],
+    }, edge8Calculator));
+    assert.throws(
+      () => validateBuyerInput({
+        pieces: [{ quantity: 1, length: 10, width: 7, edges: ["top"] }],
+      }, edge8Calculator),
+      /wykańczany bok musi mieć minimum 8 cm/,
     );
   });
 
