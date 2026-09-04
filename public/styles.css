@@ -217,11 +217,29 @@ form {
   padding-top: 31px;
 }
 
-.row-fields,
-.furniture-fields {
+.row-fields {
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(86px, 0.6fr) repeat(2, minmax(130px, 1fr));
+}
+
+.furniture-fields {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.furniture-fields > .field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.furniture-fields > .field-quantity {
+  flex: 0 0 84px;
+}
+
+.furniture-fields > .field-custom {
+  flex-grow: 1.35;
 }
 
 .row-controls {
@@ -254,13 +272,14 @@ form {
 }
 
 .edge-picker {
-  aspect-ratio: 1.55;
-  border: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
   display: grid;
-  grid-template-columns: 64px 1fr 64px;
-  grid-template-rows: 42px 1fr 42px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 420px;
   margin: 0;
   min-width: 0;
+  overflow: hidden;
   padding: 0;
 }
 
@@ -268,45 +287,21 @@ form {
   min-width: 260px;
 }
 
-.board-preview {
-  align-items: center;
-  background: var(--surface-muted);
-  border: 2px solid var(--border-strong);
-  border-radius: 6px;
-  box-shadow: inset 0 0 0 1px var(--surface);
-  color: var(--text-muted);
-  display: flex;
-  font-size: 0.9rem;
-  font-weight: 800;
-  grid-column: 2;
-  grid-row: 2;
-  justify-content: center;
-  text-align: center;
-}
-
-.board-preview span {
-  max-width: 90%;
-}
-
 .furniture-row.no-edge-picker {
   grid-template-columns: 104px minmax(0, 1fr) auto;
-}
-
-.furniture-row.no-edge-picker .furniture-fields {
-  grid-template-columns: minmax(74px, 90px) repeat(auto-fit, minmax(130px, 180px));
-  justify-content: start;
-  max-width: 760px;
 }
 
 .edge-toggle {
   align-items: center;
   cursor: pointer;
   display: flex;
-  font-size: 0.82rem;
-  font-weight: 800;
   justify-content: center;
   min-width: 0;
   position: relative;
+}
+
+.edge-toggle + .edge-toggle {
+  border-left: 1px solid var(--border-strong);
 }
 
 .edge-toggle input {
@@ -317,51 +312,38 @@ form {
 
 .edge-toggle span {
   background: var(--surface);
-  border: 2px solid var(--border-strong);
-  border-radius: 6px;
   color: var(--text);
-  display: block;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
   padding: 8px;
   text-align: center;
   width: 100%;
 }
 
 .edge-toggle:hover input:not(:disabled) + span {
-  border-color: var(--primary-border);
   background: var(--primary-subtle);
 }
 
 .edge-toggle input:checked + span {
-  background: var(--primary-subtle);
-  border-color: var(--primary);
-  box-shadow: inset 0 0 0 1px var(--primary);
-  color: var(--primary-text);
+  background: var(--primary);
+  color: var(--surface);
 }
 
 .edge-toggle input:focus-visible + span {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-ring);
+  box-shadow: inset 0 0 0 2px var(--primary), 0 0 0 3px var(--primary-ring);
 }
 
-.edge-top {
-  grid-column: 2;
-  grid-row: 1;
+.edge-icon {
+  display: block;
+  height: 28px;
+  padding: 0;
+  width: 28px;
 }
 
-.edge-right {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.edge-bottom {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.edge-left {
-  grid-column: 1;
-  grid-row: 2;
+.edge-toggle input:checked + span .edge-icon {
+  filter: brightness(0) invert(1);
 }
 
 label {
@@ -375,18 +357,36 @@ label {
 }
 
 .field-label {
+  align-items: center;
   color: var(--text);
+  display: flex;
   font-size: 0.86rem;
   font-weight: 850;
+  gap: 6px;
 }
 
-.field-label span {
+.field-label .field-unit {
   color: var(--text-muted);
   font-weight: 750;
 }
 
+.dimension-icon {
+  fill: none;
+  flex: 0 0 auto;
+  height: 18px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+  width: 18px;
+}
+
+.dimension-icon-dotted {
+  stroke-dasharray: 1 3.5;
+}
+
 .field-guidance {
   color: var(--text-muted);
+  display: none;
   font-size: 0.78rem;
   line-height: 1.35;
   min-height: 1.05rem;
@@ -699,6 +699,10 @@ dd {
   .row-fields,
   .furniture-fields {
     grid-template-columns: 1fr;
+  }
+
+  .furniture-fields {
+    display: grid;
   }
 
   .edge-field {

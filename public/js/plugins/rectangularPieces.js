@@ -324,7 +324,7 @@ function formatPieceForCalculator(piece, calculator) {
 
 function formatPiece(piece, noteOrder, config) {
   const [firstKey, secondKey] = noteOrder;
-  const edgeText = config.edges.enabled ? formatEdges(piece.edges) : "";
+  const edgeText = config.edges.enabled ? formatEdges(piece.edges, config.edges.label) : "";
   const customFieldsText = formatCustomFields(piece.customFields);
   return `${piece.quantity}x ${formatLength(piece[firstKey], config)} x ${formatLength(piece[secondKey], config)}${edgeText}${customFieldsText}`;
 }
@@ -474,17 +474,18 @@ function dimensionLabel(key, config) {
   return key;
 }
 
-function formatEdges(edges) {
+function formatEdges(edges, label = "Oklejenie") {
+  const edgeLabel = String(label).trim() || "Oklejenie";
   if (edges.length === 4) {
-    return ", oklejenie: dookoła";
+    return `, ${edgeLabel}: dookoła`;
   }
   if (edges.length > 0) {
-    return `, oklejenie: ${edges.map(edgeLabel).join(", ")}`;
+    return `, ${edgeLabel}: ${edges.map(edgeLabelForPiece).join(", ")}`;
   }
-  return ", bez oklejenia";
+  return `, ${edgeLabel}: brak`;
 }
 
-function edgeLabel(edge) {
+function edgeLabelForPiece(edge) {
   return {
     top: "góra",
     right: "prawy",

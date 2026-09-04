@@ -80,7 +80,19 @@ describe("marketplace note", () => {
   it("formats compact piece lines using calculator dimension order", () => {
     assert.equal(
       formatResultPieceLine({ quantity: 1, length: 52, width: 42, unit: "cm", edges: [] }, furnitureCalculator),
-      "1x 52 cm x 42 cm, bez oklejenia",
+      "1x 52 cm x 42 cm, Oklejenie: brak",
+    );
+
+    const calculatorWithCustomEdgeLabel = {
+      ...furnitureCalculator,
+      configuration: {
+        ...furnitureCalculator.configuration,
+        edges: { ...furnitureCalculator.configuration.edges, label: "Obrzeże" },
+      },
+    };
+    assert.equal(
+      formatResultPieceLine({ quantity: 1, length: 52, width: 42, unit: "cm", edges: ["top", "bottom"] }, calculatorWithCustomEdgeLabel),
+      "1x 52 cm x 42 cm, Obrzeże: góra, dół",
     );
   });
 
@@ -114,7 +126,7 @@ describe("validation and calculation", () => {
     assert.equal(calculation.result.purchasableItems, 22);
     assert.equal(calculation.result.totalArea, 2184);
     assert.equal(calculation.result.totalCoatedEdgeCm, 84);
-    assert.equal(calculation.marketplaceNote, "1x 42 cm x 52 cm, oklejenie: góra, dół");
+    assert.equal(calculation.marketplaceNote, "1x 42 cm x 52 cm, Oklejenie: góra, dół");
   });
 
   it("enforces furniture limits from the calculator configuration", () => {
@@ -194,7 +206,7 @@ describe("validation and calculation", () => {
 
     assert.equal(calculation.result.totalArea, 2100);
     assert.equal(calculation.result.purchasableItems, 21);
-    assert.equal(calculation.marketplaceNote, "1x 100 cm x 21 cm, bez oklejenia, dekor: Dąb");
+    assert.equal(calculation.marketplaceNote, "1x 100 cm x 21 cm, Oklejenie: brak, dekor: Dąb");
   });
 
   it("requires custom fields, validates allowed values, and applies configured edge minimums", () => {

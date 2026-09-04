@@ -607,14 +607,13 @@ function renderEdgePicker(index, config) {
       <span class="field-label">${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
       <fieldset class="edge-picker" aria-label="${escapeHtml(config.edges.label ?? "Wykończenie")}">
         ${["top", "right", "bottom", "left"].map((edge) => `
-          <label class="edge-toggle edge-${edge}">
-            <input type="checkbox" name="edge_${edge}_${index}" ${checkedEdge(config, edge)}>
-            <span>${edgeLabel(edge)}</span>
+          <label class="edge-toggle edge-${edge}" title="${edgeLabel(edge)}">
+            <input type="checkbox" name="edge_${edge}_${index}" aria-label="${edgeLabel(edge)}" ${checkedEdge(config, edge)}>
+            <span>
+              <img class="edge-icon" src="/icons/border-${edge}-variant.svg" alt="" aria-hidden="true">
+            </span>
           </label>
         `).join("")}
-        <div class="board-preview" aria-hidden="true">
-          <span>${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
-        </div>
       </fieldset>
       <span class="field-error" aria-live="polite"></span>
     </div>
@@ -629,7 +628,8 @@ function renderQuantityField(index) {
   const name = `quantity_${index}`;
   return renderField({
     name,
-    label: "Ilość",
+    className: "field-quantity",
+    label: "Liczba szt.",
     guidance: "Liczba sztuk tego elementu",
     control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="1" step="1" value="1" inputmode="numeric" required>`,
   });
@@ -647,6 +647,7 @@ function renderCustomField(field, fieldIndex, rowIndex) {
   if (field.allowedValues.length > 0) {
     return renderField({
       name,
+      className: "field-custom",
       label: field.label,
       guidance: field.required ? "Pole wymagane" : "Opcjonalnie",
       control: `<select id="${escapeHtml(name)}" name="${escapeHtml(name)}" ${required}>
@@ -657,6 +658,7 @@ function renderCustomField(field, fieldIndex, rowIndex) {
   }
   return renderField({
     name,
+    className: "field-custom",
     label: field.label,
     guidance: field.required ? "Pole wymagane" : "Opcjonalnie",
     control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="text" autocomplete="off" ${required}>`,
@@ -682,10 +684,13 @@ function renderDimensionField(dimension, index, config) {
   const name = `${dimension.key}_${index}`;
   const unit = config.displayUnit ?? "cm";
   const label = dimension.label;
+  const labelIcon = renderDimensionIcon(dimension);
   if (Array.isArray(dimension.allowedValuesCm) && dimension.allowedValuesCm.length > 0) {
     return renderField({
       name,
+      className: "field-dimension",
       label,
+      labelIcon,
       unit,
       guidance: "Wybierz dostępną wartość",
       control: `<select id="${escapeHtml(name)}" name="${escapeHtml(name)}" required>
@@ -704,7 +709,9 @@ function renderDimensionField(dimension, index, config) {
   const maxAttribute = max ? ` max="${formatMetric(fromCentimeters(max, unit)).replace(",", ".")}"` : "";
   return renderField({
     name,
+    className: "field-dimension",
     label,
+    labelIcon,
     unit,
     guidance: dimensionGuidance(dimension, config),
     control: `<input id="${escapeHtml(name)}" name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="1" inputmode="decimal" required>`,
@@ -717,15 +724,25 @@ function browserMinimumForNumberInput(dimensionKey, config) {
   return String(Math.max(1, configuredMinimum));
 }
 
-function renderField({ name, label, unit = "", guidance = "", control }) {
+function renderField({ name, className = "", label, labelIcon = "", unit = "", guidance = "", control }) {
   return `
-    <label class="field" data-field="${escapeHtml(name)}">
-      <span class="field-label">${escapeHtml(label)}${unit ? ` <span>${escapeHtml(unit)}</span>` : ""}</span>
+    <label class="field ${escapeHtml(className)}" data-field="${escapeHtml(name)}">
+      <span class="field-label">${labelIcon}<span class="field-label-text">${escapeHtml(label)}${unit ? ` <span class="field-unit">${escapeHtml(unit)}</span>` : ""}</span></span>
       ${control}
       ${guidance ? `<span class="field-guidance">${escapeHtml(guidance)}</span>` : ""}
       <span class="field-error" aria-live="polite"></span>
     </label>
   `;
+}
+
+function renderDimensionIcon(dimension) {
+  const descriptor = `${dimension.key ?? ""} ${dimension.label ?? ""}`.toLocaleLowerCase("pl-PL");
+  const isHorizontal = descriptor.includes("width") || descriptor.includes("szerokość");
+  const paths = isHorizontal
+    ? '<path d="M3 5H21M3 19H21"/><path class="dimension-icon-dotted" d="M5 6V18M19 6V18"/>'
+    : '<path d="M5 3V21M19 3V21"/><path class="dimension-icon-dotted" d="M6 5H18M6 19H18"/>';
+
+  return `<svg class="dimension-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
 }
 
 function dimensionGuidance(dimension, config) {
