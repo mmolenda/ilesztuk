@@ -16,7 +16,6 @@ main().catch((error) => {
 async function main() {
   const route = parseRoute(window.location.pathname);
   if (route.name === "home") {
-    renderLanding();
     return;
   }
   if (route.name === "calculator") {
@@ -36,59 +35,6 @@ function parseRoute(pathname) {
     return { name: "calculator", calculatorId: parts[1] };
   }
   return { name: "not-found" };
-}
-
-function renderLanding() {
-  document.title = "IleSztuk – kalkulatory zamówień dla e-commerce";
-  app.innerHTML = `
-    <div class="landing">
-      <section class="landing-hero" aria-labelledby="landing-title">
-        <p class="eyebrow">Kalkulatory zamówień dla e-commerce</p>
-        <h1 id="landing-title">Klient wpisuje wymiary.<br>IleSztuk mówi mu, ile sztuk kupić.</h1>
-        <p class="landing-lead">Proste kalkulatory zamówień dla produktów na wymiar.<br>Mniej liczenia, mniej pomyłek, prostsze zakupy.</p>
-        <div class="landing-actions">
-          <a class="button-link" href="${DEMO_CALCULATOR_URL}">Zobacz przykładowy kalkulator</a>
-          <a class="text-link" href="#kontakt">Masz podobną ofertę? Skontaktuj się</a>
-        </div>
-      </section>
-
-      <figure class="landing-screenshot">
-        <img src="/images/formatkahq-demo.png" alt="Przykładowy kalkulator FormatkaHQ z uzupełnionymi wymiarami, wykończeniem mat, zaznaczonym oklejeniem i wynikiem Kup 9 sztuk.">
-      </figure>
-
-      <section class="landing-section landing-copy" aria-labelledby="problem-title">
-        <h2 id="problem-title">Zamiast instrukcji „pomnóż, podziel i zaokrąglij”</h2>
-        <p>Jeśli sprzedajesz formatki, płyty, listwy, siatki, materiały lub inne produkty wymagające przeliczenia na sztuki, klient nie musi wykonywać obliczeń samodzielnie.</p>
-        <p>IleSztuk dostosowuje kalkulator do Twojego sposobu sprzedaży.</p>
-      </section>
-
-      <section class="landing-section" aria-labelledby="how-title">
-        <h2 id="how-title">Jak to działa?</h2>
-        <div class="steps-grid">
-          <article class="step-card"><p class="step-number">1</p><h3>Klient podaje wymiary</h3><p>Wpisuje potrzebne wymiary, ilość i opcje produktu.</p></article>
-          <article class="step-card"><p class="step-number">2</p><h3>Kalkulator przelicza zamówienie</h3><p>Obliczenia są wykonywane według zasad określonych dla konkretnej oferty.</p></article>
-          <article class="step-card"><p class="step-number">3</p><h3>Klient wie, ile sztuk kupić</h3><p>Otrzymuje liczbę sztuk do zamówienia oraz gotowe szczegóły do przekazania sprzedawcy.</p></article>
-        </div>
-      </section>
-
-      <section class="landing-section" aria-labelledby="benefits-title">
-        <h2 id="benefits-title">Prościej dla klienta. Mniej problemów dla sprzedawcy.</h2>
-        <div class="benefits-grid">
-          <article class="benefit-item"><h3>Mniej błędów w zamówieniach</h3><p>Klient nie musi rozumieć wzoru ani wykonywać obliczeń ręcznie.</p></article>
-          <article class="benefit-item"><h3>Mniej pytań przed zakupem</h3><p>Zasady zamówienia są przełożone na prosty formularz.</p></article>
-          <article class="benefit-item"><h3>Kalkulator dopasowany do oferty</h3><p>Pola, warianty i sposób obliczania mogą odpowiadać konkretnemu produktowi.</p></article>
-          <article class="benefit-item"><h3>Gotowe szczegóły zamówienia</h3><p>Klient może skopiować ustandaryzowany tekst z wymiarami i konfiguracją.</p></article>
-        </div>
-      </section>
-
-      <section class="landing-contact" id="kontakt" aria-labelledby="contact-title">
-        <h2 id="contact-title">Sprzedajesz produkt, dla którego klienci muszą coś obliczać?</h2>
-        <p>Pokaż nam swoją ofertę. Przygotujemy przykładowy kalkulator dopasowany do Twojego sposobu sprzedaży.</p>
-        <a class="button-link" href="mailto:${CONTACT_EMAIL}">Skontaktuj się</a>
-      </section>
-    </div>
-  `;
-  renderSiteFooter();
 }
 
 function renderCalculatorPage(calculator, error = "") {

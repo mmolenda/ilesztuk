@@ -1,4 +1,12 @@
 {
+  "headers": [
+    {
+      "source": "/k/:calculatorId",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    }
+  ],
   "rewrites": [
     { "source": "/k/:calculatorId", "destination": "/index.html" }
   ]
