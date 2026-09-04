@@ -823,7 +823,7 @@ dd {
   margin: 0;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 847px) {
   header {
     align-items: flex-start;
     flex-direction: column;
