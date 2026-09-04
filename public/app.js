@@ -68,7 +68,7 @@ function renderSellerName(calculator) {
   if (!calculator.customerUrl) {
     return `<p class="seller-name">od <span class="seller-name-value">${customerName}</span></p>`;
   }
-  return `<p class="seller-name">od <a class="seller-link" href="${escapeHtml(calculator.customerUrl)}" target="_blank" rel="noopener noreferrer">${customerName}<img class="external-link-icon" src="/icons/open-in-new.svg" alt="" aria-hidden="true"></a></p>`;
+  return `<p class="seller-name">od <a class="seller-link" href="${escapeHtml(calculator.customerUrl)}" target="_blank" rel="noopener noreferrer">${customerName}<span class="external-link-icon" aria-hidden="true"></span></a></p>`;
 }
 
 function usesGraphicalRectangularCalculatorForm(calculator) {
@@ -734,7 +734,7 @@ function renderEdgePicker(index, config) {
           <label class="edge-toggle edge-${edge}" title="${edgeLabel(edge)}">
             <input type="checkbox" name="edge_${edge}_${index}" aria-label="${edgeLabel(edge)}" ${checkedEdge(config, edge)}>
             <span>
-              <img class="edge-icon" src="/icons/border-${edge}-variant.svg" alt="" aria-hidden="true">
+              <span class="edge-icon edge-icon-${edge}" aria-hidden="true"></span>
             </span>
           </label>
         `).join("")}
