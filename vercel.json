@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/o/:offerId", "destination": "/index.html" },
+    { "source": "/c/:customerId", "destination": "/index.html" }
+  ]
+}
