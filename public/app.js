@@ -49,12 +49,11 @@ function renderCalculatorPage(calculator, error = "") {
     <section class="panel">
       <h1>${escapeHtml(calculator.calculatorName)}</h1>
       <p class="muted">${escapeHtml(calculator.customerName)}</p>
-      ${error ? `<p class="error">${escapeHtml(error)}</p>` : ""}
       ${usesGraphicalRectangularCalculatorForm(calculator) ? renderFurnitureCalculatorForm(calculator) : renderAreaCalculatorForm(calculator)}
     </section>
   `;
-  bindRows();
   bindCalculatorForm(calculator);
+  bindRows(() => document.querySelector("[data-calculation-form]")?.updateCalculation?.());
 }
 
 function usesGraphicalRectangularCalculatorForm(calculator) {
@@ -80,13 +79,12 @@ function renderAreaCalculatorForm(calculator) {
           <input name="quantity_0" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
           ${renderDimensionInput(first, 0, config)}
           ${renderDimensionInput(second, 0, config)}
-          <span class="row-spacer" aria-hidden="true"></span>
+          <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
         </div>
       </div>
       <div class="row-controls">
         <button type="button" class="icon-button" data-add-row aria-label="Dodaj wiersz">+</button>
       </div>
-      <button type="submit">Oblicz</button>
     </form>
     <template data-row-template>
       <div class="piece-row" data-piece-row>
@@ -96,7 +94,7 @@ function renderAreaCalculatorForm(calculator) {
         <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
       </div>
     </template>
-    <section id="result"></section>
+    <section id="result" aria-live="polite"></section>
   `;
 }
 
@@ -118,21 +116,20 @@ function renderFurnitureCalculatorForm(calculator) {
         ${rules.map((rule) => `<span>${escapeHtml(rule)}</span>`).join("")}
       </div>
       <div class="form-grid furniture-grid" data-piece-rows>
-        ${renderFurnitureRow(0, false, calculator)}
+        ${renderFurnitureRow(0, calculator)}
       </div>
       <div class="row-controls">
         <button type="button" class="icon-button" data-add-row aria-label="Dodaj wiersz">+</button>
       </div>
-      <button type="submit">Oblicz</button>
     </form>
     <template data-row-template>
-      ${renderFurnitureRow("__INDEX__", true, calculator)}
+      ${renderFurnitureRow("__INDEX__", calculator)}
     </template>
-    <section id="result"></section>
+    <section id="result" aria-live="polite"></section>
   `;
 }
 
-function renderFurnitureRow(index, removable, calculator) {
+function renderFurnitureRow(index, calculator) {
   const config = calculator.configuration;
   const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
   const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
@@ -152,12 +149,12 @@ function renderFurnitureRow(index, removable, calculator) {
         ${decorInput}
       </div>
       ${renderEdgePicker(index, config)}
-      ${removable ? '<button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>' : '<span class="row-spacer" aria-hidden="true"></span>'}
+      <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
     </div>
   `;
 }
 
-function bindRows() {
+function bindRows(onRowsChanged = () => {}) {
   const maxRows = 10;
   const rowsContainer = document.querySelector("[data-piece-rows]");
   const addButton = document.querySelector("[data-add-row]");
@@ -166,8 +163,15 @@ function bindRows() {
   }
 
   const updateRowControls = () => {
-    const rowCount = rowsContainer.querySelectorAll("[data-piece-row]").length;
+    const rows = rowsContainer.querySelectorAll("[data-piece-row]");
+    const rowCount = rows.length;
     addButton.disabled = rowCount >= maxRows;
+    rows.forEach((row) => {
+      const removeButton = row.querySelector("[data-remove-row]");
+      if (removeButton) {
+        removeButton.hidden = rowCount <= 1;
+      }
+    });
   };
 
   addButton.addEventListener("click", () => {
@@ -180,12 +184,14 @@ function bindRows() {
     wrapper.innerHTML = template.innerHTML.replaceAll("__INDEX__", String(rowCount));
     rowsContainer.append(wrapper.firstElementChild);
     updateRowControls();
+    onRowsChanged();
   });
 
   rowsContainer.addEventListener("click", (event) => {
     if (event.target.matches("[data-remove-row]")) {
       event.target.closest("[data-piece-row]").remove();
       updateRowControls();
+      onRowsChanged();
     }
   });
 
@@ -198,20 +204,29 @@ function bindCalculatorForm(calculator) {
     return;
   }
 
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
+  const updateResult = ({ showErrors = false } = {}) => {
     try {
       const body = Object.fromEntries(new FormData(form));
       const calculation = calculateForCalculator({ pieces: collectPieces(body, calculator) }, calculator);
       renderBuyerResult(calculation, calculator);
     } catch (error) {
       if (error instanceof ValidationError) {
-        renderCalculatorPage(calculator, error.message);
+        renderValidationState(error.message, showErrors);
         return;
       }
       throw error;
     }
+  };
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    updateResult({ showErrors: true });
   });
+
+  form.addEventListener("input", () => updateResult());
+  form.addEventListener("change", () => updateResult());
+  form.updateCalculation = updateResult;
+  updateResult();
 }
 
 function collectPieces(body, calculator) {
@@ -222,7 +237,7 @@ function collectPieces(body, calculator) {
     const quantity = body[`quantity_${index}`];
     const first = body[`${firstKey}_${index}`];
     const second = body[`${secondKey}_${index}`];
-    if ([quantity, first, second].every((value) => value === undefined || value === "")) {
+    if (isBlank(first) && isBlank(second)) {
       continue;
     }
 
@@ -235,6 +250,10 @@ function collectPieces(body, calculator) {
     });
   }
   return pieces;
+}
+
+function isBlank(value) {
+  return value === undefined || value === "";
 }
 
 function renderBuyerResult(calculation, calculator) {
@@ -268,6 +287,14 @@ function renderBuyerResult(calculation, calculator) {
     await navigator.clipboard.writeText(document.getElementById(id).textContent);
     event.currentTarget.textContent = "Skopiowano";
   });
+}
+
+function renderValidationState(message, showErrors) {
+  const target = document.querySelector("#result");
+  if (!target) {
+    return;
+  }
+  target.innerHTML = showErrors ? `<p class="error">${escapeHtml(message)}</p>` : "";
 }
 
 function rectangularRuleChips(config) {

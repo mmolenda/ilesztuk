@@ -124,11 +124,6 @@ form {
   gap: 8px;
 }
 
-.row-spacer {
-  height: 42px;
-  width: 42px;
-}
-
 .rule-strip {
   display: flex;
   flex-wrap: wrap;
@@ -286,6 +281,10 @@ button:disabled {
   opacity: 0.45;
 }
 
+button[hidden] {
+  display: none;
+}
+
 .icon-button {
   align-items: center;
   display: inline-flex;
@@ -401,8 +400,7 @@ dd {
     grid-column: 1 / -1;
   }
 
-  .piece-row .icon-button,
-  .row-spacer {
+  .piece-row .icon-button {
     grid-column: 2;
   }
 
@@ -419,8 +417,7 @@ dd {
     grid-template-columns: 1fr;
   }
 
-  .furniture-row .icon-button,
-  .furniture-row .row-spacer {
+  .furniture-row .icon-button {
     grid-column: 2;
   }
 
