@@ -31,13 +31,35 @@ export function normalizeCalculator(rawCalculator, source = "calculator") {
   if (!rawCalculator.configuration || typeof rawCalculator.configuration !== "object" || Array.isArray(rawCalculator.configuration)) {
     throw new Error(`${source}: configuration must be an object`);
   }
+  const customerUrl = normalizeCustomerUrl(rawCalculator.customerUrl, source);
 
   return Object.freeze({
     customerId: rawCalculator.customerId,
     customerName: rawCalculator.customerName,
+    customerUrl,
     calculatorId: rawCalculator.calculatorId,
     calculatorName: rawCalculator.calculatorName,
     plugin: rawCalculator.plugin,
     configuration: structuredClone(rawCalculator.configuration),
   });
+}
+
+function normalizeCustomerUrl(value, source) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  if (typeof value !== "string") {
+    throw new Error(`${source}: customerUrl must be a string`);
+  }
+
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`${source}: customerUrl must be a valid URL`);
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(`${source}: customerUrl must use http or https`);
+  }
+  return url.toString();
 }

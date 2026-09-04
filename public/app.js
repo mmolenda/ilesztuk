@@ -52,7 +52,7 @@ function renderCalculatorPage(calculator, error = "") {
         <div>
           <p class="eyebrow">Kalkulator zamówienia</p>
           <h1>${escapeHtml(calculator.calculatorName)}</h1>
-          <p class="seller-name">${escapeHtml(calculator.customerName)}</p>
+          ${renderSellerName(calculator)}
         </div>
       </div>
       ${usesGraphicalRectangularCalculatorForm(calculator) ? renderFurnitureCalculatorForm(calculator) : renderAreaCalculatorForm(calculator)}
@@ -60,6 +60,14 @@ function renderCalculatorPage(calculator, error = "") {
   `;
   bindCalculatorForm(calculator);
   bindRows(() => document.querySelector("[data-calculation-form]")?.updateCalculation?.());
+}
+
+function renderSellerName(calculator) {
+  const customerName = escapeHtml(calculator.customerName);
+  if (!calculator.customerUrl) {
+    return `<p class="seller-name">od <span class="seller-name-value">${customerName}</span></p>`;
+  }
+  return `<p class="seller-name">od <a class="seller-link" href="${escapeHtml(calculator.customerUrl)}" target="_blank" rel="noopener noreferrer">${customerName}<img class="external-link-icon" src="/icons/open-in-new.svg" alt="" aria-hidden="true"></a></p>`;
 }
 
 function usesGraphicalRectangularCalculatorForm(calculator) {
@@ -317,7 +325,7 @@ function renderBuyerResult(calculation, calculator) {
         <pre id="marketplace-note">${escapeHtml(calculation.marketplaceNote)}</pre>
         <div class="actions">
           <button type="button" data-copy-target="marketplace-note">Kopiuj tekst</button>
-          <span class="copy-feedback" data-copy-feedback aria-live="polite"></span>
+          <span class="copy-feedback" data-copy-feedback aria-live="polite" hidden></span>
         </div>
       </section>
       <details class="calculation-details">
@@ -342,9 +350,11 @@ function renderBuyerResult(calculation, calculator) {
       </details>
     </div>
   `;
+  let copyFeedbackTimeout;
   target.querySelector("[data-copy-target]").addEventListener("click", async (event) => {
     const feedback = target.querySelector("[data-copy-feedback]");
     const id = event.currentTarget.getAttribute("data-copy-target");
+    clearTimeout(copyFeedbackTimeout);
     try {
       await navigator.clipboard.writeText(document.getElementById(id).textContent);
       feedback.textContent = "Skopiowano";
@@ -353,6 +363,12 @@ function renderBuyerResult(calculation, calculator) {
       feedback.textContent = "Nie udało się skopiować";
       feedback.className = "copy-feedback is-error";
     }
+    feedback.hidden = false;
+    copyFeedbackTimeout = setTimeout(() => {
+      feedback.hidden = true;
+      feedback.textContent = "";
+      feedback.className = "copy-feedback";
+    }, 2000);
   });
 }
 
@@ -606,7 +622,7 @@ function renderEdgePicker(index, config) {
     <div class="field edge-field" data-field="edges_${index}">
       <span class="field-label">${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
       <fieldset class="edge-picker" aria-label="${escapeHtml(config.edges.label ?? "Wykończenie")}">
-        ${["top", "right", "bottom", "left"].map((edge) => `
+        ${["left", "top", "right", "bottom"].map((edge) => `
           <label class="edge-toggle edge-${edge}" title="${edgeLabel(edge)}">
             <input type="checkbox" name="edge_${edge}_${index}" aria-label="${edgeLabel(edge)}" ${checkedEdge(config, edge)}>
             <span>

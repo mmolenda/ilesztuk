@@ -130,6 +130,37 @@ h2 {
   margin: 6px 0 0;
 }
 
+.seller-link {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  gap: 4px;
+  text-decoration-color: var(--border-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.seller-name-value {
+  font-weight: 700;
+}
+
+.seller-link:hover {
+  color: var(--text);
+  text-decoration-color: currentColor;
+}
+
+.seller-link:focus-visible {
+  border-radius: 2px;
+  box-shadow: 0 0 0 3px var(--primary-ring);
+  outline: none;
+}
+
+.external-link-icon {
+  height: 14px;
+  opacity: 0.7;
+  width: 14px;
+}
+
 .section-heading {
   display: grid;
   gap: 6px;

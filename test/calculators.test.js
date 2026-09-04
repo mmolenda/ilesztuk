@@ -91,6 +91,32 @@ describe("static calculators", () => {
     );
   });
 
+  it("accepts an optional customer URL and rejects unsafe protocols", () => {
+    const calculator = normalizeCalculator({
+      customerId: "seller-a",
+      customerName: "Seller A",
+      customerUrl: "https://example.com/seller",
+      calculatorId: "AaBbCc123456",
+      calculatorName: "Calculator A",
+      plugin: "rectangular_pieces",
+      configuration: {},
+    });
+    assert.equal(calculator.customerUrl, "https://example.com/seller");
+
+    assert.throws(
+      () => normalizeCalculator({
+        customerId: "seller-a",
+        customerName: "Seller A",
+        customerUrl: "javascript:alert(1)",
+        calculatorId: "AaBbCc123456",
+        calculatorName: "Calculator A",
+        plugin: "rectangular_pieces",
+        configuration: {},
+      }),
+      /customerUrl must use http or https/,
+    );
+  });
+
   it("generates random 12-character base62 calculator ids", async () => {
     const { stdout } = await execFileAsync("npm", ["run", "generate-calculator-id", "--silent"], {
       cwd: process.cwd(),
