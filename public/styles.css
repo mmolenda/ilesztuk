@@ -382,8 +382,12 @@ form {
   width: 100%;
 }
 
-.edge-toggle:hover input:not(:disabled) + span {
+.edge-toggle:hover input:not(:disabled):not(:checked) + span {
   background: var(--primary-subtle);
+}
+
+.edge-toggle:hover input:checked + span {
+  background: var(--primary-hover);
 }
 
 .edge-toggle input:checked + span {
@@ -392,7 +396,11 @@ form {
 }
 
 .edge-toggle input:focus-visible + span {
-  box-shadow: inset 0 0 0 2px var(--primary), 0 0 0 3px var(--primary-ring);
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+.edge-toggle input:checked:focus-visible + span {
+  box-shadow: inset 0 0 0 2px var(--surface);
 }
 
 .edge-icon {
