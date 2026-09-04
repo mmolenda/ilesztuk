@@ -13,47 +13,46 @@ export const RECTANGULAR_PIECES_PLUGIN = "rectangular_pieces";
 
 export const DEFAULT_RECTANGULAR_CONFIG = Object.freeze({
   displayUnit: "cm",
-  purchasableUnitLabel: "sztuk",
   dimensions: {
     first: { key: "width", label: "Szerokość", allowedValuesCm: null },
     second: { key: "height", label: "Wysokość", allowedValuesCm: null },
     noteOrder: ["width", "height"],
+    // rounding.mode options: ceil, floor, round
     rounding: { enabled: false, mode: "ceil", precision: 0 },
   },
   pricing: {
-    areaUnit: "m2",
-    mode: "divide_by_coefficient",
-    coefficient: 0.8,
-    areaPerItemCm2: null,
-    multiplier: null,
+    // areaUnit options: cm2, m2
+    areaUnit: "cm2",
+    coefficient: 0.01,
   },
   rowArea: {
+    // rounding.mode options: ceil, floor, round
     rounding: { enabled: false, mode: "round", precision: 2 },
   },
   totalArea: {
+    // rounding.mode options: ceil, floor, round
     rounding: { enabled: false, mode: "round", precision: 2 },
   },
   purchasableQuantity: {
+    // rounding.mode options: ceil, floor, round
     rounding: { mode: "ceil", precision: 0 },
-  },
-  billableDimensions: {
-    minCm: null,
   },
   edges: {
     enabled: false,
+    label: "Oklejenie",
     default: [],
-    minCoatedEdgeCm: null,
+    minFinishEdgeCm: null,
   },
   decor: {
     enabled: false,
     required: false,
   },
   constraints: {
-    minDimensionCm: 0.01,
+    minFirstCm: 0.01,
+    minSecondCm: 0.01,
+    maxFirstCm: null,
+    maxSecondCm: null,
     maxPerimeterCm: null,
-    maxLengthCm: null,
-    packageMaxCm: null,
-    packageHeightCm: 0,
     enforceSecondNotGreaterThanFirst: false,
   },
 });
@@ -114,10 +113,6 @@ export function rectangularConfig(config = {}) {
         ...DEFAULT_RECTANGULAR_CONFIG.purchasableQuantity.rounding,
         ...config.purchasableQuantity?.rounding,
       },
-    },
-    billableDimensions: {
-      ...DEFAULT_RECTANGULAR_CONFIG.billableDimensions,
-      ...config.billableDimensions,
     },
     edges: {
       ...DEFAULT_RECTANGULAR_CONFIG.edges,
@@ -198,8 +193,11 @@ function calculate(validatedInput, calculator) {
     pieces: aggregatePieces(validatedInput.pieces, (piece) => pieceKey(piece, config)),
     rows: rowDetails,
     areaUnit: config.pricing.areaUnit,
+    dimensionLabels: {
+      first: config.dimensions.first.label,
+      second: config.dimensions.second.label,
+    },
     totalArea: roundDecimal(sum(rowDetails.map((row) => row.rawArea)), 4),
-    totalBillableArea: roundDecimal(sum(rowDetails.map((row) => row.rawBillableArea)), 4),
     totalAreaForPricing: roundDecimal(totalAreaForPricing, 4),
     totalCoatedEdgeCm: roundDecimal(sum(rowDetails.map((row) => row.coatedEdgeCm)), 2),
     pricing: structuredClone(config.pricing),
@@ -210,16 +208,15 @@ function calculate(validatedInput, calculator) {
       purchasableQuantity: structuredClone(config.purchasableQuantity.rounding),
     },
     limits: {
-      minDimensionCm: config.constraints.minDimensionCm,
-      minCoatedEdgeCm: config.edges.minCoatedEdgeCm,
+      minFirstCm: config.constraints.minFirstCm,
+      minSecondCm: config.constraints.minSecondCm,
+      minFinishEdgeCm: config.edges.minFinishEdgeCm,
+      maxFirstCm: config.constraints.maxFirstCm,
+      maxSecondCm: config.constraints.maxSecondCm,
       maxPerimeterCm: config.constraints.maxPerimeterCm,
-      maxLengthCm: config.constraints.maxLengthCm,
-      packageMaxCm: config.constraints.packageMaxCm,
-      billableMinDimensionCm: config.billableDimensions.minCm,
     },
     rawPurchasableItems: roundDecimal(rawPurchasableItems, 4),
     purchasableItems: Math.max(1, applyRounding(rawPurchasableItems, config.purchasableQuantity.rounding)),
-    purchasableUnitLabel: config.purchasableUnitLabel,
   };
 }
 
@@ -230,11 +227,9 @@ function calculateRow(piece, config) {
   const rawSecondCm = piece[secondKey];
   const roundedFirstCm = applyOptionalRounding(rawFirstCm, config.dimensions.rounding);
   const roundedSecondCm = applyOptionalRounding(rawSecondCm, config.dimensions.rounding);
-  const billableFirstCm = billableDimension(roundedFirstCm, config);
-  const billableSecondCm = billableDimension(roundedSecondCm, config);
   const rawArea = areaInConfiguredUnit(rawFirstCm, rawSecondCm, piece.quantity, config.pricing.areaUnit);
-  const rawBillableArea = areaInConfiguredUnit(billableFirstCm, billableSecondCm, piece.quantity, config.pricing.areaUnit);
-  const areaForTotal = applyOptionalRounding(rawBillableArea, config.rowArea.rounding);
+  const rawAreaForPricing = areaInConfiguredUnit(roundedFirstCm, roundedSecondCm, piece.quantity, config.pricing.areaUnit);
+  const areaForTotal = applyOptionalRounding(rawAreaForPricing, config.rowArea.rounding);
 
   return {
     quantity: piece.quantity,
@@ -242,12 +237,12 @@ function calculateRow(piece, config) {
       [firstKey]: rawFirstCm,
       [secondKey]: rawSecondCm,
     },
-    billableDimensionsCm: {
-      [firstKey]: billableFirstCm,
-      [secondKey]: billableSecondCm,
+    roundedDimensionsCm: {
+      [firstKey]: roundedFirstCm,
+      [secondKey]: roundedSecondCm,
     },
     rawArea: roundDecimal(rawArea, 4),
-    rawBillableArea: roundDecimal(rawBillableArea, 4),
+    rawAreaForPricing: roundDecimal(rawAreaForPricing, 4),
     areaForTotal: roundDecimal(areaForTotal, 4),
     coatedEdgeCm: roundDecimal(coatedEdgeLength(piece, config), 2),
   };
@@ -266,9 +261,8 @@ function validateConstraints({
   config,
   ValidationError,
 }) {
-  if (firstValue < config.constraints.minDimensionCm || secondValue < config.constraints.minDimensionCm) {
-    throw new ValidationError(`${rowLabel}: każdy bok musi mieć minimum ${config.constraints.minDimensionCm} cm.`);
-  }
+  validateDimensionLimits(rowLabel, firstDimension, firstValue, config.constraints.minFirstCm, config.constraints.maxFirstCm, ValidationError);
+  validateDimensionLimits(rowLabel, secondDimension, secondValue, config.constraints.minSecondCm, config.constraints.maxSecondCm, ValidationError);
   validateAllowedDimensionValue(rowLabel, firstDimension, firstValue, ValidationError);
   validateAllowedDimensionValue(rowLabel, secondDimension, secondValue, ValidationError);
 
@@ -280,15 +274,6 @@ function validateConstraints({
   if (config.constraints.maxPerimeterCm && perimeter > config.constraints.maxPerimeterCm) {
     throw new ValidationError(`${rowLabel}: suma boków jednej formatki nie może przekroczyć ${config.constraints.maxPerimeterCm} cm.`);
   }
-  if (config.constraints.maxLengthCm && dimensionValue("length", { [firstKey]: firstValue, [secondKey]: secondValue }, config) > config.constraints.maxLengthCm) {
-    throw new ValidationError(`${rowLabel}: długość elementu nie może przekroczyć ${config.constraints.maxLengthCm} cm.`);
-  }
-  if (config.constraints.packageMaxCm) {
-    const packageSize = firstValue + secondValue + config.constraints.packageHeightCm;
-    if (packageSize > config.constraints.packageMaxCm) {
-      throw new ValidationError(`${rowLabel}: długość + szerokość + wysokość paczki nie może przekroczyć ${config.constraints.packageMaxCm} cm.`);
-    }
-  }
   if (config.decor.required && !decor) {
     throw new ValidationError(`${rowLabel}: podaj wybrany dekor.`);
   }
@@ -297,9 +282,18 @@ function validateConstraints({
     const edgeLength = edge === "top" || edge === "bottom"
       ? dimensionValue("length", { [firstKey]: firstValue, [secondKey]: secondValue }, config)
       : dimensionValue("width", { [firstKey]: firstValue, [secondKey]: secondValue }, config);
-    if (config.edges.minCoatedEdgeCm && edgeLength < config.edges.minCoatedEdgeCm) {
-      throw new ValidationError(`${rowLabel}: oklejany bok musi mieć minimum ${config.edges.minCoatedEdgeCm} cm.`);
+    if (config.edges.minFinishEdgeCm && edgeLength < config.edges.minFinishEdgeCm) {
+      throw new ValidationError(`${rowLabel}: wykańczany bok musi mieć minimum ${config.edges.minFinishEdgeCm} cm.`);
     }
+  }
+}
+
+function validateDimensionLimits(rowLabel, dimension, value, minimum, maximum, ValidationError) {
+  if (minimum && value < minimum) {
+    throw new ValidationError(`${rowLabel}: ${dimension.label.toLowerCase()} musi mieć minimum ${minimum} cm.`);
+  }
+  if (maximum && value > maximum) {
+    throw new ValidationError(`${rowLabel}: ${dimension.label.toLowerCase()} nie może przekroczyć ${maximum} cm.`);
   }
 }
 
@@ -344,29 +338,20 @@ function formatPiece(piece, noteOrder, config) {
 function sellerMetrics(result) {
   return [
     ["Łączna powierzchnia", `${formatMetric(result.totalArea)} ${areaUnitLabel(result.areaUnit)}`],
-    result.limits.billableMinDimensionCm
-      ? ["Powierzchnia rozliczeniowa", `${formatMetric(result.totalBillableArea)} ${areaUnitLabel(result.areaUnit)}`]
-      : null,
-    result.totalAreaForPricing !== result.totalBillableArea
+    result.totalAreaForPricing !== result.totalArea
       ? ["Powierzchnia po zaokrągleniach", `${formatMetric(result.totalAreaForPricing)} ${areaUnitLabel(result.areaUnit)}`]
       : null,
     result.totalCoatedEdgeCm ? ["Łączna długość oklejenia", `${formatMetric(result.totalCoatedEdgeCm)} cm`] : null,
     pricingMetric(result.pricing),
     result.limits.maxPerimeterCm ? ["Limit sumy boków", `${formatMetric(result.limits.maxPerimeterCm)} cm`] : null,
-    result.limits.maxLengthCm ? ["Maksymalna długość", `${formatMetric(result.limits.maxLengthCm)} cm`] : null,
-    result.limits.packageMaxCm ? ["Limit paczki", `${formatMetric(result.limits.packageMaxCm)} cm`] : null,
-    ["Wynik", `${result.purchasableItems} ${result.purchasableUnitLabel}`],
+    result.limits.maxFirstCm ? [`Maks. ${result.dimensionLabels?.first ?? "pierwszy wymiar"}`, `${formatMetric(result.limits.maxFirstCm)} cm`] : null,
+    result.limits.maxSecondCm ? [`Maks. ${result.dimensionLabels?.second ?? "drugi wymiar"}`, `${formatMetric(result.limits.maxSecondCm)} cm`] : null,
+    ["Wynik", `${result.purchasableItems} sztuk`],
   ].filter(Boolean);
 }
 
 function priceArea(area, pricing) {
-  if (pricing.mode === "multiply_area") {
-    return area * pricing.multiplier;
-  }
-  if (pricing.mode === "divide_by_area_per_item") {
-    return area / pricing.areaPerItemCm2;
-  }
-  return area / pricing.coefficient;
+  return area * pricing.coefficient;
 }
 
 function areaInConfiguredUnit(firstCm, secondCm, quantity, areaUnit) {
@@ -414,10 +399,6 @@ function coatedEdgeLength(piece, config) {
   }, 0);
 }
 
-function billableDimension(value, config) {
-  return config.billableDimensions.minCm ? Math.max(value, config.billableDimensions.minCm) : value;
-}
-
 function dimensionValue(key, piece, config = DEFAULT_RECTANGULAR_CONFIG) {
   if (piece[key] !== undefined) {
     return piece[key];
@@ -461,12 +442,6 @@ function edgeLabel(edge) {
 }
 
 function pricingMetric(pricing) {
-  if (pricing.mode === "multiply_area") {
-    return ["Przelicznik", `x${formatMetric(pricing.multiplier)}`];
-  }
-  if (pricing.mode === "divide_by_area_per_item") {
-    return ["Przelicznik", `${formatMetric(pricing.areaPerItemCm2)} cm² / sztuka`];
-  }
   return ["Współczynnik", formatMetric(pricing.coefficient)];
 }
 

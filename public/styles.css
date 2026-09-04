@@ -177,12 +177,27 @@ form {
 }
 
 .board-preview {
+  align-items: center;
   background: #f7e7c6;
   border: 2px solid #b98b3b;
   border-radius: 6px;
   box-shadow: inset 0 0 0 1px #fdf4df;
+  color: #654a1b;
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 800;
   grid-column: 2;
   grid-row: 2;
+  justify-content: center;
+  text-align: center;
+}
+
+.board-preview span {
+  max-width: 90%;
+}
+
+.furniture-row.no-edge-picker {
+  grid-template-columns: minmax(240px, 1fr) 42px;
 }
 
 .edge-toggle {

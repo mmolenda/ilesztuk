@@ -1,0 +1,33 @@
+{
+  "customerId": "ilesztuk-demo",
+  "customerName": "IleSztuk Demo",
+  "calculatorId": "aRgmmnhr0Te2",
+  "calculatorName": "Formatki meblowe z oklejeniem",
+  "plugin": "rectangular_pieces",
+  "configuration": {
+    "displayUnit": "cm",
+    "dimensions": {
+      "first": { "key": "length", "label": "Długość" },
+      "second": { "key": "width", "label": "Szerokość" },
+      "noteOrder": ["length", "width"]
+    },
+    "pricing": {
+      "areaUnit": "cm2",
+      "coefficient": 0.01
+    },
+    "purchasableQuantity": {
+      "rounding": { "mode": "round", "precision": 0 }
+    },
+    "edges": {
+      "enabled": true,
+      "label": "Oklejenie",
+      "minFinishEdgeCm": 8
+    },
+    "constraints": {
+      "minFirstCm": 8,
+      "minSecondCm": 8,
+      "maxPerimeterCm": 460,
+      "enforceSecondNotGreaterThanFirst": true
+    }
+  }
+}

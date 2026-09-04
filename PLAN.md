@@ -74,11 +74,9 @@ Example:
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",
-    "purchasableUnitLabel": "sztuk",
     "pricing": {
       "areaUnit": "m2",
-      "mode": "divide_by_coefficient",
-      "coefficient": 0.8
+      "coefficient": 1.25
     }
   }
 }
@@ -128,22 +126,41 @@ The `rectangular_pieces` plugin supports rectangular pieces with configurable di
 Configuration areas:
 
 - `displayUnit`: display unit, currently centimeters.
-- `purchasableUnitLabel`: label shown after the final order quantity.
 - `dimensions`: first/second dimension keys, labels, marketplace-note order, optional fixed `allowedValuesCm`, and optional dimension rounding.
-- `pricing`: one of coefficient-based pricing, area-per-item pricing, or area multiplier pricing.
+- `pricing`: area unit plus one coefficient used to convert area into purchasable items.
 - `rowArea.rounding`: optional per-row area rounding before summing.
 - `totalArea.rounding`: optional total-area rounding after summing.
 - `purchasableQuantity.rounding`: final quantity rounding.
-- `billableDimensions.minCm`: optional minimum billable dimension.
-- `edges`: optional edge coating UI and validation.
+- `edges`: optional edge finishing UI and validation.
 - `decor`: optional decor input and required validation.
-- `constraints`: minimum dimension, maximum perimeter, maximum length, package limit, package height, and second-dimension ordering rule.
+- `constraints`: minimum and maximum values for the first/second configured dimensions, maximum perimeter, and second-dimension ordering rule.
 
-Supported pricing modes:
+`purchasableUnitLabel` is not configurable. Buyer-facing results always use `sztuk`.
 
-- `divide_by_coefficient`: area divided by `coefficient`.
-- `divide_by_area_per_item`: area divided by `areaPerItemCm2`.
-- `multiply_area`: area multiplied by `multiplier`.
+`pricing.areaUnit` controls the area unit used for pricing calculations:
+
+- `cm2`: square centimeters.
+- `m2`: square meters.
+
+Pricing uses one formula:
+
+```text
+purchasable items before final rounding = area in pricing.areaUnit * pricing.coefficient
+```
+
+`pricing.coefficient` means how many purchasable items are produced by one unit of area:
+
+- `areaUnit: "cm2", coefficient: 0.01`: `100 cm2 = 1 sztuka`.
+- `areaUnit: "m2", coefficient: 20`: `area in m2 * 20`.
+- `areaUnit: "m2", coefficient: 1.25`: equivalent to `area in m2 / 0.8`.
+
+If `pricing.coefficient` is omitted, the plugin default is `0.01` with `areaUnit: "cm2"`, meaning `100 cm2 = 1 sztuka`.
+
+Supported rounding modes:
+
+- `ceil`: round up.
+- `floor`: round down.
+- `round`: mathematical rounding.
 
 ## Buyer Result
 
@@ -201,6 +218,6 @@ Test coverage should verify:
 - rectangular-piece validation;
 - configured limits;
 - fixed dimension lists;
-- coefficient, area-per-item, and multiplier pricing;
+- coefficient pricing;
 - staged rounding;
 - generated marketplace-note content.

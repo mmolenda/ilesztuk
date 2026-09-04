@@ -70,7 +70,6 @@ function renderAreaCalculatorForm(calculator) {
   const config = calculator.configuration;
   const first = config.dimensions?.first ?? { key: "width", label: "Szerokość" };
   const second = config.dimensions?.second ?? { key: "height", label: "Wysokość" };
-  const minDimension = formatMetric(config.constraints?.minDimensionCm ?? 0.01).replace(",", ".");
   const rules = rectangularRuleChips(config);
 
   return `
@@ -79,8 +78,8 @@ function renderAreaCalculatorForm(calculator) {
       <div class="form-grid" data-piece-rows>
         <div class="piece-row" data-piece-row>
           <input name="quantity_0" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
-          ${renderDimensionInput(first, 0, minDimension)}
-          ${renderDimensionInput(second, 0, minDimension)}
+          ${renderDimensionInput(first, 0, config)}
+          ${renderDimensionInput(second, 0, config)}
           <span class="row-spacer" aria-hidden="true"></span>
         </div>
       </div>
@@ -92,8 +91,8 @@ function renderAreaCalculatorForm(calculator) {
     <template data-row-template>
       <div class="piece-row" data-piece-row>
         <input name="quantity___INDEX__" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
-        ${renderDimensionInput(first, "__INDEX__", minDimension)}
-        ${renderDimensionInput(second, "__INDEX__", minDimension)}
+        ${renderDimensionInput(first, "__INDEX__", config)}
+        ${renderDimensionInput(second, "__INDEX__", config)}
         <button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>
       </div>
     </template>
@@ -103,13 +102,14 @@ function renderAreaCalculatorForm(calculator) {
 
 function renderFurnitureCalculatorForm(calculator) {
   const config = calculator.configuration;
+  const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
+  const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
   const rules = [
     ...rectangularRuleChips(config),
-    config.billableDimensions?.minCm ? `Min. wymiar do rozliczenia ${formatMetric(config.billableDimensions.minCm)} cm` : null,
-    config.edges?.minCoatedEdgeCm ? `Oklejany bok min. ${formatMetric(config.edges.minCoatedEdgeCm)} cm` : null,
+    config.edges?.minFinishEdgeCm ? `${config.edges.label ?? "Wykończenie"}: bok min. ${formatMetric(config.edges.minFinishEdgeCm)} cm` : null,
     config.constraints?.maxPerimeterCm ? `Max suma boków ${formatMetric(config.constraints.maxPerimeterCm)} cm` : null,
-    config.constraints?.maxLengthCm ? `Max długość ${formatMetric(config.constraints.maxLengthCm)} cm` : null,
-    config.constraints?.packageMaxCm ? `Paczka max ${formatMetric(config.constraints.packageMaxCm)} cm` : null,
+    config.constraints?.maxFirstCm ? `Max ${firstDimension.label.toLowerCase()} ${formatMetric(config.constraints.maxFirstCm)} cm` : null,
+    config.constraints?.maxSecondCm ? `Max ${secondDimension.label.toLowerCase()} ${formatMetric(config.constraints.maxSecondCm)} cm` : null,
   ].filter(Boolean);
 
   return `
@@ -134,33 +134,24 @@ function renderFurnitureCalculatorForm(calculator) {
 
 function renderFurnitureRow(index, removable, calculator) {
   const config = calculator.configuration;
-  const minDimension = formatMetric(config.constraints?.minDimensionCm ?? 0.01).replace(",", ".");
   const firstDimension = config.dimensions?.first ?? { key: "length", label: "Długość" };
   const secondDimension = config.dimensions?.second ?? { key: "width", label: "Szerokość" };
   const noteOrder = config.dimensions?.noteOrder ?? [firstDimension.key, secondDimension.key];
-  const firstInput = renderDimensionInput(dimensionForKey(noteOrder[0], config), index, minDimension);
-  const secondInput = renderDimensionInput(dimensionForKey(noteOrder[1], config), index, minDimension);
+  const firstInput = renderDimensionInput(dimensionForKey(noteOrder[0], config), index, config);
+  const secondInput = renderDimensionInput(dimensionForKey(noteOrder[1], config), index, config);
   const decorInput = config.decor?.enabled
     ? `<input name="decor_${index}" type="text" placeholder="Dekor" ${config.decor.required ? "required" : ""}>`
     : "";
 
   return `
-    <div class="furniture-row" data-piece-row>
+    <div class="furniture-row ${config.edges?.enabled ? "" : "no-edge-picker"}" data-piece-row>
       <div class="furniture-fields">
         <input name="quantity_${index}" type="number" min="1" step="1" value="1" placeholder="Ilość" required>
         ${firstInput}
         ${secondInput}
         ${decorInput}
       </div>
-      <fieldset class="edge-picker" aria-label="Oklejane boki">
-        ${["top", "right", "bottom", "left"].map((edge) => `
-          <label class="edge-toggle edge-${edge}">
-            <input type="checkbox" name="edge_${edge}_${index}" ${checkedEdge(config, edge)}>
-            <span>${edgeLabel(edge)}</span>
-          </label>
-        `).join("")}
-        <div class="board-preview" aria-hidden="true"></div>
-      </fieldset>
+      ${renderEdgePicker(index, config)}
       ${removable ? '<button type="button" class="icon-button secondary" data-remove-row aria-label="Usuń wiersz">-</button>' : '<span class="row-spacer" aria-hidden="true"></span>'}
     </div>
   `;
@@ -252,7 +243,7 @@ function renderBuyerResult(calculation, calculator) {
   target.innerHTML = `
     <div class="result-panel">
       <p class="muted">${escapeHtml(calculator.calculatorName)}</p>
-      <h2>Kup ${result.purchasableItems} ${escapeHtml(result.purchasableUnitLabel)}</h2>
+      <h2>Kup ${result.purchasableItems} sztuk</h2>
       <h3>Do uwag do zamówienia wklej</h3>
       <pre id="marketplace-note">${escapeHtml(calculation.marketplaceNote)}</pre>
       <div class="actions">
@@ -283,12 +274,8 @@ function rectangularRuleChips(config) {
   const pricing = config.pricing ?? {};
   const rules = [];
 
-  if (pricing.mode === "multiply_area") {
-    rules.push(`Powierzchnia ${areaUnitLabel(pricing.areaUnit)} x ${formatMetric(pricing.multiplier)}`);
-  } else if (pricing.mode === "divide_by_area_per_item") {
-    rules.push(`${formatMetric(pricing.areaPerItemCm2)} cm² / sztuka`);
-  } else if (pricing.coefficient) {
-    rules.push(`Powierzchnia ${areaUnitLabel(pricing.areaUnit)} / ${formatMetric(pricing.coefficient)}`);
+  if (pricing.coefficient) {
+    rules.push(`Powierzchnia ${areaUnitLabel(pricing.areaUnit)} x ${formatMetric(pricing.coefficient)}`);
   }
 
   if (config.dimensions?.rounding?.enabled) {
@@ -305,7 +292,25 @@ function rectangularRuleChips(config) {
   return rules;
 }
 
-function renderDimensionInput(dimension, index, min) {
+function renderEdgePicker(index, config) {
+  if (!config.edges?.enabled) {
+    return "";
+  }
+
+  return `<fieldset class="edge-picker" aria-label="${escapeHtml(config.edges.label ?? "Wykończenie")}">
+    ${["top", "right", "bottom", "left"].map((edge) => `
+      <label class="edge-toggle edge-${edge}">
+        <input type="checkbox" name="edge_${edge}_${index}" ${checkedEdge(config, edge)}>
+        <span>${edgeLabel(edge)}</span>
+      </label>
+    `).join("")}
+    <div class="board-preview" aria-hidden="true">
+      <span>${escapeHtml(config.edges.label ?? "Wykończenie")}</span>
+    </div>
+  </fieldset>`;
+}
+
+function renderDimensionInput(dimension, index, config) {
   const name = `${dimension.key}_${index}`;
   const label = `${dimension.label} cm`;
   if (Array.isArray(dimension.allowedValuesCm) && dimension.allowedValuesCm.length > 0) {
@@ -318,7 +323,24 @@ function renderDimensionInput(dimension, index, min) {
     </select>`;
   }
 
-  return `<input name="${escapeHtml(name)}" type="number" min="${min}" step="0.01" placeholder="${escapeHtml(label)}" required>`;
+  const min = formatMetric(minimumForDimension(dimension.key, config) ?? 0.01).replace(",", ".");
+  const max = maximumForDimension(dimension.key, config);
+  const maxAttribute = max ? ` max="${formatMetric(max).replace(",", ".")}"` : "";
+  return `<input name="${escapeHtml(name)}" type="number" min="${min}"${maxAttribute} step="0.01" placeholder="${escapeHtml(label)}" required>`;
+}
+
+function minimumForDimension(key, config) {
+  if (key === config.dimensions?.first?.key) {
+    return config.constraints?.minFirstCm;
+  }
+  return config.constraints?.minSecondCm;
+}
+
+function maximumForDimension(key, config) {
+  if (key === config.dimensions?.first?.key) {
+    return config.constraints?.maxFirstCm;
+  }
+  return config.constraints?.maxSecondCm;
 }
 
 function dimensionForKey(key, config) {

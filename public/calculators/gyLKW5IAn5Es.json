@@ -6,7 +6,6 @@
   "plugin": "rectangular_pieces",
   "configuration": {
     "displayUnit": "cm",
-    "purchasableUnitLabel": "sztuk",
     "dimensions": {
       "first": { "key": "width", "label": "Szerokość" },
       "second": { "key": "height", "label": "Wysokość" },
@@ -15,8 +14,7 @@
     },
     "pricing": {
       "areaUnit": "m2",
-      "mode": "multiply_area",
-      "multiplier": 20
+      "coefficient": 20
     },
     "rowArea": {
       "rounding": { "enabled": true, "mode": "round", "precision": 2 }
