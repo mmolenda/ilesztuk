@@ -90,6 +90,10 @@ a:focus-visible {
   font-size: 1.25rem;
 }
 
+.brand-accent {
+  color: var(--color-accent);
+}
+
 .site-nav {
   align-items: center;
   display: flex;
@@ -263,6 +267,10 @@ form {
   font-size: clamp(2.35rem, 5vw, 4.4rem);
   letter-spacing: -0.035em;
   line-height: 1.04;
+}
+
+.landing-title-accent {
+  color: var(--color-accent);
 }
 
 .landing-lead {
