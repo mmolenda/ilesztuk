@@ -387,10 +387,23 @@ form {
 .landing-contact .button-link {
   justify-self: center;
   justify-content: center;
-  margin-top: 4px;
   max-width: 300px;
   text-align: center;
   width: 100%;
+}
+
+.contact-email {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  justify-self: center;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+
+.contact-email:hover {
+  color: var(--color-accent);
+  text-decoration-color: currentColor;
 }
 
 .button-link {
@@ -1103,9 +1116,9 @@ dd {
 
 .footer-inner {
   align-items: flex-start;
-  display: flex;
-  gap: 20px 36px;
-  justify-content: space-between;
+  display: grid;
+  gap: 24px 36px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.8fr) minmax(0, 1fr);
   margin: 0 auto;
   max-width: 1120px;
   padding: 28px 16px;
@@ -1128,27 +1141,39 @@ dd {
   margin: 0;
 }
 
-.footer-nav {
-  display: flex;
-  gap: 16px;
+.footer-contact {
+  display: grid;
+  gap: 8px;
 }
 
-.footer-nav a,
+.footer-contact h2 {
+  color: var(--color-text);
+  font-size: 0.86rem;
+  margin: 0;
+}
+
+.footer-email {
+  color: var(--color-text);
+  font-size: 0.92rem;
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-strong);
+  text-underline-offset: 3px;
+}
+
 .calculator-footer a {
   color: var(--color-text-muted);
   font-size: 0.86rem;
 }
 
-.footer-nav a:hover,
-.calculator-footer a:hover {
+.calculator-footer a:hover,
+.footer-email:hover {
   color: var(--color-accent);
 }
 
 .footer-business {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  justify-content: flex-end;
+  display: grid;
+  gap: 6px;
+  justify-self: end;
 }
 
 .calculator-footer {
@@ -1157,6 +1182,9 @@ dd {
 
 .calculator-footer .footer-inner {
   align-items: center;
+  display: flex;
+  gap: 20px 36px;
+  justify-content: space-between;
   padding-bottom: 20px;
   padding-top: 20px;
 }
@@ -1187,12 +1215,17 @@ dd {
   }
 
   .footer-inner {
-    align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    gap: 24px;
   }
 
   .footer-business {
-    justify-content: flex-start;
+    justify-self: start;
+  }
+
+  .calculator-footer .footer-inner {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .rule-strip.subtle {

@@ -5,7 +5,6 @@ import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangula
 
 const app = document.querySelector("#app");
 const siteFooter = document.querySelector("#site-footer");
-const DEMO_CALCULATOR_URL = "/k/8ukq6mwKY5ft";
 const CONTACT_EMAIL = "kontakt@ilesztuk.pl";
 
 main().catch((error) => {
@@ -965,7 +964,10 @@ function renderSiteFooter() {
   siteFooter.innerHTML = `
     <div class="footer-inner">
       <div class="footer-brand"><strong>IleSztuk</strong><p>Kalkulatory zamówień dla Allegro i e-commerce.</p></div>
-      <nav class="footer-nav" aria-label="Stopka"><a href="${DEMO_CALCULATOR_URL}">Demo</a><a href="/#kontakt">Kontakt</a></nav>
+      <section class="footer-contact" aria-labelledby="footer-contact-title">
+        <h2 id="footer-contact-title">Kontakt</h2>
+        <a class="footer-email" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>
+      </section>
       <div class="footer-business"><span>Marcin Molenda</span><span>NIP 5252298622</span><span>© 2026 IleSztuk</span></div>
     </div>
   `;
