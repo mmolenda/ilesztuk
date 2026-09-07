@@ -62,6 +62,14 @@ function routeToFile(pathname) {
     return path.join(publicDir, "index.html");
   }
 
+  if (pathname === "/regulamin" || pathname === "/regulamin/") {
+    return path.join(publicDir, "regulamin.html");
+  }
+
+  if (pathname === "/polityka-prywatnosci" || pathname === "/polityka-prywatnosci/") {
+    return path.join(publicDir, "polityka-prywatnosci.html");
+  }
+
   const filePath = path.normalize(path.join(publicDir, pathname));
   if (!filePath.startsWith(publicDir)) {
     return path.join(publicDir, "index.html");

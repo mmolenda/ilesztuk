@@ -2,10 +2,10 @@ import { calculateForCalculator, ValidationError } from "./js/calculations.js?v=
 import { isValidCalculatorId, loadCalculator } from "./js/calculators.js?v=20260904-1750";
 import { formatPiecesQuantity } from "./js/formatting.js?v=20260904-1750";
 import { dimensionKeyForEdge, MAX_PIECE_QUANTITY } from "./js/plugins/rectangularPieces.js?v=20260904-1750";
+import { SITE, siteFooterMarkup } from "./js/site.js?v=20260907-legal";
 
 const app = document.querySelector("#app");
 const siteFooter = document.querySelector("#site-footer");
-const CONTACT_EMAIL = "kontakt@ilesztuk.pl";
 
 main().catch((error) => {
   console.error(error);
@@ -15,6 +15,7 @@ main().catch((error) => {
 async function main() {
   const route = parseRoute(window.location.pathname);
   if (route.name === "home") {
+    renderSiteFooter();
     return;
   }
   if (route.name === "calculator") {
@@ -50,7 +51,7 @@ function renderCalculatorPage(calculator, error = "") {
       ${usesGraphicalRectangularCalculatorForm(calculator) ? renderFurnitureCalculatorForm(calculator) : renderAreaCalculatorForm(calculator)}
     </section>
   `;
-  renderCalculatorFooter();
+  renderSiteFooter();
   bindCalculatorForm(calculator);
   bindRows(() => document.querySelector("[data-calculation-form]")?.updateCalculation?.());
 }
@@ -961,24 +962,7 @@ function renderSiteFooter() {
     return;
   }
   siteFooter.className = "site-footer";
-  siteFooter.innerHTML = `
-    <div class="footer-inner">
-      <div class="footer-brand"><strong>IleSztuk</strong><p>Kalkulatory zamówień dla Allegro i e-commerce.</p></div>
-      <section class="footer-contact" aria-labelledby="footer-contact-title">
-        <h2 id="footer-contact-title">Kontakt</h2>
-        <a class="footer-email" href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>
-      </section>
-      <div class="footer-business"><span>Marcin Molenda</span><span>NIP 5252298622</span><span>© 2026 IleSztuk</span></div>
-    </div>
-  `;
-}
-
-function renderCalculatorFooter() {
-  if (!siteFooter) {
-    return;
-  }
-  siteFooter.className = "site-footer calculator-footer";
-  siteFooter.innerHTML = `<div class="footer-inner"><p>Kalkulator obsługiwany przez <a href="/">IleSztuk</a></p><a href="mailto:${CONTACT_EMAIL}">Kontakt</a></div>`;
+  siteFooter.innerHTML = siteFooterMarkup();
 }
 
 function formatMetric(value) {

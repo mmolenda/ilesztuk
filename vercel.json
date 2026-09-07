@@ -8,6 +8,8 @@
     }
   ],
   "rewrites": [
+    { "source": "/regulamin", "destination": "/regulamin.html" },
+    { "source": "/polityka-prywatnosci", "destination": "/polityka-prywatnosci.html" },
     { "source": "/k/:calculatorId", "destination": "/index.html" }
   ]
 }
