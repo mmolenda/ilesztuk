@@ -1,0 +1,43 @@
+{
+  "customerId": "ox-maskownice",
+  "customerName": "ox-maskownice",
+  "customerUrl": "https://allegro.pl/uzytkownik/ox-maskownice",
+  "calculatorId": "QgybQ9PEtSK6",
+  "calculatorName": "Osłona maskownica grzejnika na wymiar",
+  "plugin": "rectangular_pieces",
+  "configuration": {
+    "displayUnit": "cm",
+    "dimensions": {
+      "first": { "key": "width", "label": "Szerokość" },
+      "second": { "key": "height", "label": "Wysokość" },
+      "noteOrder": ["height", "width"]
+    },
+    "pricing": {
+      "areaUnit": "m2",
+      "coefficient": 100
+    },
+    "totalArea": {
+      "rounding": { "enabled": true, "mode": "floor", "precision": 2 }
+    },
+    "purchasableQuantity": {
+      "rounding": { "mode": "round", "precision": 0 }
+    },
+    "customFields": [
+      {
+        "label": "Wybrany model ażuru",
+        "required": true,
+        "allowedValues": []
+      },
+      {
+        "label": "Rodzaj grzejnika",
+        "required": true,
+        "allowedValues": []
+      }
+    ],
+    "constraints": {
+      "maxFirstCm": 240,
+      "maxSecondCm": 120,
+      "enforceSecondNotGreaterThanFirst": false
+    }
+  }
+}
