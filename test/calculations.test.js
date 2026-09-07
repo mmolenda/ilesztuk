@@ -94,6 +94,21 @@ describe("marketplace note", () => {
       formatResultPieceLine({ quantity: 1, length: 52, width: 42, unit: "cm", edges: ["top", "bottom"] }, calculatorWithCustomEdgeLabel),
       "1x 52 cm x 42 cm, Obrzeże: góra, dół",
     );
+
+    const calculatorWithOptionalFields = {
+      ...furnitureCalculator,
+      configuration: {
+        ...furnitureCalculator.configuration,
+        customFields: [
+          { label: "Wariant", required: false, allowedValues: ["Pierwszy", "Drugi"] },
+          { label: "Uchwyt", required: false, allowedValues: [] },
+        ],
+      },
+    };
+    assert.equal(
+      formatResultPieceLine({ quantity: 1, length: 52, width: 42, unit: "cm", edges: ["left", "right"], customFields: [{ value: "Drugi" }] }, calculatorWithOptionalFields),
+      "1x 52 cm x 42 cm, Oklejenie: lewy, prawy; wariant: Drugi; uchwyt: nie wybrano",
+    );
   });
 
   it("can generate a note from an already calculated result", () => {
@@ -213,7 +228,7 @@ describe("validation and calculation", () => {
 
     assert.equal(calculation.result.totalArea, 2100);
     assert.equal(calculation.result.purchasableItems, 21);
-    assert.equal(calculation.marketplaceNote, "1x 100 cm x 21 cm, Oklejenie: brak, dekor: Dąb");
+    assert.equal(calculation.marketplaceNote, "1x 100 cm x 21 cm, Oklejenie: brak; dekor: Dąb");
   });
 
   it("requires custom fields, validates allowed values, and applies configured edge minimums", () => {

@@ -340,9 +340,12 @@ function formatPieceForCalculator(piece, calculator) {
 
 function formatPiece(piece, noteOrder, config) {
   const [firstKey, secondKey] = noteOrder;
-  const edgeText = config.edges.enabled ? formatEdges(piece.edges, config.edges.label) : "";
-  const customFieldsText = formatCustomFields(piece.customFields);
-  return `${piece.quantity}x ${formatLength(piece[firstKey], config)} x ${formatLength(piece[secondKey], config)}${edgeText}${customFieldsText}`;
+  const aspects = [
+    config.edges.enabled ? formatEdges(piece.edges, config.edges.label) : null,
+    ...formatCustomFields(piece.customFields, config.customFields),
+  ].filter(Boolean);
+  const dimensions = `${piece.quantity}x ${formatLength(piece[firstKey], config)} x ${formatLength(piece[secondKey], config)}`;
+  return aspects.length > 0 ? `${dimensions}, ${aspects.join("; ")}` : dimensions;
 }
 
 function sellerMetrics(result) {
@@ -440,11 +443,21 @@ function validateCustomFields(rowLabel, fields, definitions, ValidationError) {
   });
 }
 
-function formatCustomFields(fields = []) {
-  const values = fields
-    .filter((field) => field.value)
-    .map((field) => `, ${field.label.toLowerCase()}: ${field.value}`);
-  return values.join("");
+function formatCustomFields(fields = [], definitions = []) {
+  const values = Array.isArray(fields) ? fields : [];
+  const configuredFields = definitions.length > 0
+    ? definitions.map((definition, index) => ({
+      label: definition.label,
+      value: values[index]?.value ?? values[index] ?? "",
+    }))
+    : values;
+
+  return configuredFields
+    .filter((field) => field.label)
+    .map((field) => {
+      const value = String(field.value ?? "").trim();
+      return `${field.label.toLowerCase()}: ${value || "nie wybrano"}`;
+    });
 }
 
 function normalizeEdges(value) {
@@ -486,15 +499,15 @@ function dimensionLabel(key, config) {
   return key;
 }
 
-function formatEdges(edges, label = "Oklejenie") {
+function formatEdges(edges = [], label = "Oklejenie") {
   const edgeLabel = String(label).trim() || "Oklejenie";
   if (edges.length === 4) {
-    return `, ${edgeLabel}: dookoła`;
+    return `${edgeLabel}: dookoła`;
   }
   if (edges.length > 0) {
-    return `, ${edgeLabel}: ${edges.map(edgeLabelForPiece).join(", ")}`;
+    return `${edgeLabel}: ${edges.map(edgeLabelForPiece).join(", ")}`;
   }
-  return `, ${edgeLabel}: brak`;
+  return `${edgeLabel}: brak`;
 }
 
 function edgeLabelForPiece(edge) {
