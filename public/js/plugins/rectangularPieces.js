@@ -37,6 +37,8 @@ export const DEFAULT_RECTANGULAR_CONFIG = Object.freeze({
   purchasableQuantity: {
     // rounding.mode options: ceil, floor, round
     rounding: { mode: "ceil", precision: 0 },
+    // When true, round the quantity required for every individual element before adding them.
+    roundEachPiece: false,
   },
   edges: {
     enabled: false,
@@ -196,11 +198,23 @@ function calculate(validatedInput, calculator) {
   const rowDetails = validatedInput.pieces.map((piece) => calculateRow(piece, config));
   const totalAreaBase = sum(rowDetails.map((row) => row.areaForTotal));
   const totalAreaForPricing = applyOptionalRounding(totalAreaBase, config.totalArea.rounding);
-  const rawPurchasableItems = priceArea(totalAreaForPricing, config.pricing);
+  const roundEachPiece = config.purchasableQuantity.roundEachPiece;
+  const rowPurchasableItems = rowDetails.map((row) => (
+    applyRounding(priceArea(row.singleAreaForPricing, config.pricing), config.purchasableQuantity.rounding) * row.quantity
+  ));
+  const rawPurchasableItems = roundEachPiece
+    ? sum(rowDetails.map((row) => priceArea(row.singleAreaForPricing, config.pricing) * row.quantity))
+    : priceArea(totalAreaForPricing, config.pricing);
+  const purchasableItems = roundEachPiece
+    ? sum(rowPurchasableItems)
+    : applyRounding(rawPurchasableItems, config.purchasableQuantity.rounding);
 
   return {
     pieces: aggregatePieces(validatedInput.pieces, (piece) => pieceKey(piece, config)),
-    rows: rowDetails,
+    rows: rowDetails.map((row, index) => ({
+      ...row,
+      purchasableItems: roundEachPiece ? rowPurchasableItems[index] : null,
+    })),
     areaUnit: config.pricing.areaUnit,
     displayUnit: config.displayUnit,
     dimensionLabels: {
@@ -226,7 +240,7 @@ function calculate(validatedInput, calculator) {
       maxPerimeterCm: config.constraints.maxPerimeterCm,
     },
     rawPurchasableItems: roundDecimal(rawPurchasableItems, 4),
-    purchasableItems: Math.max(1, applyRounding(rawPurchasableItems, config.purchasableQuantity.rounding)),
+    purchasableItems: Math.max(1, purchasableItems),
   };
 }
 
@@ -238,6 +252,7 @@ function calculateRow(piece, config) {
   const roundedFirstCm = applyOptionalRounding(rawFirstCm, config.dimensions.rounding);
   const roundedSecondCm = applyOptionalRounding(rawSecondCm, config.dimensions.rounding);
   const rawArea = areaInConfiguredUnit(rawFirstCm, rawSecondCm, piece.quantity, config.pricing.areaUnit);
+  const singleAreaForPricing = areaInConfiguredUnit(roundedFirstCm, roundedSecondCm, 1, config.pricing.areaUnit);
   const rawAreaForPricing = areaInConfiguredUnit(roundedFirstCm, roundedSecondCm, piece.quantity, config.pricing.areaUnit);
   const areaForTotal = applyOptionalRounding(rawAreaForPricing, config.rowArea.rounding);
 
@@ -252,6 +267,7 @@ function calculateRow(piece, config) {
       [secondKey]: roundedSecondCm,
     },
     rawArea: roundDecimal(rawArea, 4),
+    singleAreaForPricing: roundDecimal(singleAreaForPricing, 4),
     rawAreaForPricing: roundDecimal(rawAreaForPricing, 4),
     areaForTotal: roundDecimal(areaForTotal, 4),
     coatedEdgeCm: roundDecimal(coatedEdgeLength(piece, config), 2),

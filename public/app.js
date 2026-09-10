@@ -370,7 +370,7 @@ function renderBuyerDetails(calculation, calculator) {
     <section class="details-section">
       <h3>Twoje elementy</h3>
       <ol class="detail-items">
-        ${calculation.input.pieces.map((piece, index) => renderBuyerItem(piece, index, config)).join("")}
+        ${calculation.input.pieces.map((piece, index) => renderBuyerItem(piece, index, config, result.rows[index])).join("")}
       </ol>
     </section>
     <section class="details-section">
@@ -384,7 +384,7 @@ function renderBuyerDetails(calculation, calculator) {
   `;
 }
 
-function renderBuyerItem(piece, index, config) {
+function renderBuyerItem(piece, index, config, rowResult = null) {
   const edgeText = buyerEdgeSummary(piece.edges, config.edges);
   const customFields = (piece.customFields ?? []).filter((field) => field.value);
   const area = buyerPieceArea(piece, config);
@@ -394,6 +394,7 @@ function renderBuyerItem(piece, index, config) {
       <p>${escapeHtml(formatBuyerDimensions(piece, config))}</p>
       <p class="detail-item-calculation">= ${piece.quantity} × ${escapeHtml(formatBuyerPieceArea(area.singleCm2, config))}</p>
       ${piece.quantity === 1 ? "" : `<p class="detail-item-calculation">= ${escapeHtml(formatBuyerPieceArea(area.totalCm2, config))}</p>`}
+      ${config.purchasableQuantity?.roundEachPiece && rowResult ? `<p class="detail-item-calculation">Do kupienia: ${escapeHtml(formatPiecesQuantity(rowResult.purchasableItems))}</p>` : ""}
       ${edgeText ? `<p>${escapeHtml(edgeText)}</p>` : ""}
       ${customFields.map((field) => `<p>${escapeHtml(field.label)}: ${escapeHtml(field.value)}</p>`).join("")}
     </li>
@@ -474,6 +475,9 @@ function buyerOrderingRules(config) {
   if (constraints.maxPerimeterCm) {
     rules.push(`Maksymalna suma boków: ${formatLength(constraints.maxPerimeterCm, config)}`);
   }
+  if (typeof constraints.toleranceMm === "number" && constraints.toleranceMm >= 0) {
+    rules.push(`Tolerancja wymiarów: ±${formatMetric(constraints.toleranceMm)} mm.`);
+  }
   if (constraints.enforceSecondNotGreaterThanFirst) {
     rules.push(`${secondDimension.label} nie może być większa niż ${firstDimension.label.toLowerCase()}`);
   }
@@ -482,6 +486,9 @@ function buyerOrderingRules(config) {
   }
   if (config.purchasableQuantity?.rounding?.mode === "ceil" && config.purchasableQuantity.rounding.precision === 0) {
     rules.push("Liczba sztuk jest zaokrąglana w górę do pełnej sztuki.");
+  }
+  if (config.purchasableQuantity?.roundEachPiece) {
+    rules.push("Każdy element jest obliczany i zaokrąglany osobno.");
   }
   return rules;
 }

@@ -1,0 +1,32 @@
+{
+  "customerId": "MCM-TECH",
+  "customerName": "MCM-TECH",
+  "customerUrl": "https://allegro.pl/uzytkownik/MCM-TECH",
+  "calculatorId": "CAzSiVnFbpvd",
+  "calculatorName": "Pleksi na wymiar",
+  "plugin": "rectangular_pieces",
+  "configuration": {
+    "displayUnit": "cm",
+    "dimensions": {
+      "first": { "key": "width", "label": "Szerokość" },
+      "second": { "key": "height", "label": "Wysokość" },
+      "noteOrder": ["width", "height"]
+    },
+    "pricing": {
+      "areaUnit": "cm2",
+      "coefficient": 0.01
+    },
+    "purchasableQuantity": {
+      "rounding": { "mode": "ceil", "precision": 0 },
+      "roundEachPiece": true
+    },
+    "constraints": {
+      "minFirstCm": 10,
+      "minSecondCm": 10,
+      "maxFirstCm": 130,
+      "maxSecondCm": 90,
+      "toleranceMm": 0.3,
+      "enforceSecondNotGreaterThanFirst": false
+    }
+  }
+}

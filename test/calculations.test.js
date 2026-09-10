@@ -340,6 +340,27 @@ describe("validation and calculation", () => {
     assert.equal(multiRow.result.purchasableItems, 55);
   });
 
+  it("can round each individual element before summing the order", () => {
+    const calculator = {
+      ...areaCalculator,
+      configuration: {
+        pricing: { areaUnit: "cm2", coefficient: 0.01 },
+        purchasableQuantity: {
+          rounding: { mode: "ceil", precision: 0 },
+          roundEachPiece: true,
+        },
+      },
+    };
+    const calculation = calculateForCalculator({
+      pieces: [
+        { quantity: 2, width: 15, height: 15 },
+        { quantity: 1, width: 50, height: 30 },
+      ],
+    }, calculator);
+
+    assert.equal(calculation.result.purchasableItems, 21);
+  });
+
   it("supports calculator-defined fixed dimension lists", () => {
     const calculator = {
       ...areaCalculator,

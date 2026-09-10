@@ -84,6 +84,25 @@ describe("static calculators", () => {
     assert.match(calculation.marketplaceNote, /rodzaj tkaniny: Trinity/);
   });
 
+  it("calculates MCM-TECH plexiglass pieces separately and enforces size limits", async () => {
+    const calculator = normalizeCalculator(
+      JSON.parse(await readFile(path.join(calculatorsDir, "CAzSiVnFbpvd.json"), "utf8")),
+      "CAzSiVnFbpvd.json",
+    );
+    const calculation = calculateForCalculator({
+      pieces: [
+        { quantity: 1, width: 50, height: 30 },
+        { quantity: 1, width: 15, height: 15 },
+      ],
+    }, calculator);
+
+    assert.equal(calculation.result.purchasableItems, 18);
+    assert.throws(
+      () => calculateForCalculator({ pieces: [{ quantity: 1, width: 131, height: 10 }] }, calculator),
+      /szerokość nie może przekroczyć 130 cm/,
+    );
+  });
+
   it("requires the json calculator shape", () => {
     assert.throws(
       () => normalizeCalculator({
