@@ -20,6 +20,13 @@
       "rounding": { "mode": "ceil", "precision": 0 },
       "roundEachPiece": true
     },
+    "customFields": [
+      {
+        "label": "Promień zaokrąglenia",
+        "required": false,
+        "allowedValues": []
+      }
+    ],
     "constraints": {
       "minFirstCm": 10,
       "minSecondCm": 10,

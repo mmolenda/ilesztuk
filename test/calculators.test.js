@@ -91,12 +91,13 @@ describe("static calculators", () => {
     );
     const calculation = calculateForCalculator({
       pieces: [
-        { quantity: 1, width: 50, height: 30 },
+        { quantity: 1, width: 50, height: 30, customFields: [{ value: "R5 mm" }] },
         { quantity: 1, width: 15, height: 15 },
       ],
     }, calculator);
 
     assert.equal(calculation.result.purchasableItems, 18);
+    assert.match(calculation.marketplaceNote, /promień zaokrąglenia: R5 mm/);
     assert.throws(
       () => calculateForCalculator({ pieces: [{ quantity: 1, width: 131, height: 10 }] }, calculator),
       /szerokość nie może przekroczyć 130 cm/,
