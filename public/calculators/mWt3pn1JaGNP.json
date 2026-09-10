@@ -1,0 +1,39 @@
+{
+  "customerId": "Stylowy__dom",
+  "customerName": "Stylowy__dom",
+  "customerUrl": "https://allegro.pl/uzytkownik/Stylowy__dom",
+  "calculatorId": "mWt3pn1JaGNP",
+  "calculatorName": "Panele ścienne tapicerowane na wymiar",
+  "plugin": "rectangular_pieces",
+  "configuration": {
+    "displayUnit": "cm",
+    "dimensions": {
+      "first": { "key": "width", "label": "Szerokość" },
+      "second": { "key": "height", "label": "Wysokość" },
+      "noteOrder": ["width", "height"],
+      "rounding": { "enabled": true, "mode": "round", "precision": 0 }
+    },
+    "pricing": {
+      "areaUnit": "m2",
+      "coefficient": 20
+    },
+    "purchasableQuantity": {
+      "rounding": { "mode": "round", "precision": 0 }
+    },
+    "customFields": [
+      {
+        "label": "Numer tkaniny",
+        "required": true,
+        "allowedValues": []
+      },
+      {
+        "label": "Rodzaj tkaniny",
+        "required": true,
+        "allowedValues": []
+      }
+    ],
+    "constraints": {
+      "enforceSecondNotGreaterThanFirst": false
+    }
+  }
+}

@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { isValidCalculatorId, loadCalculator, normalizeCalculator, CALCULATOR_ID_RE } from "../public/js/calculators.js";
+import { calculateForCalculator } from "../public/js/calculations.js";
 
 const execFileAsync = promisify(execFile);
 const calculatorsDir = path.join(process.cwd(), "public", "calculators");
@@ -64,6 +65,23 @@ describe("static calculators", () => {
     } finally {
       globalThis.fetch = previousFetch;
     }
+  });
+
+  it("calculates custom upholstered panels using the Stylowy__dom ordering rules", async () => {
+    const calculator = normalizeCalculator(
+      JSON.parse(await readFile(path.join(calculatorsDir, "mWt3pn1JaGNP.json"), "utf8")),
+      "mWt3pn1JaGNP.json",
+    );
+    const calculation = calculateForCalculator({
+      pieces: [
+        { quantity: 4, width: 78, height: 42, customFields: [{ value: "12" }, { value: "Trinity" }] },
+        { quantity: 5, width: 67, height: 43, customFields: [{ value: "12" }, { value: "Trinity" }] },
+      ],
+    }, calculator);
+
+    assert.equal(calculation.result.purchasableItems, 55);
+    assert.match(calculation.marketplaceNote, /numer tkaniny: 12/);
+    assert.match(calculation.marketplaceNote, /rodzaj tkaniny: Trinity/);
   });
 
   it("requires the json calculator shape", () => {
